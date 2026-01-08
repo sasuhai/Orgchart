@@ -85,8 +85,8 @@ export const OrgChartNode: React.FC<OrgChartNodeProps> = ({
   const getDragStyle = () => {
     switch (dragOverPosition) {
       case 'inside': return 'border-dashed border-4 border-green-500 bg-green-50/50 dark:bg-green-900/20';
-      case 'before': return 'border-l-4 border-blue-500 bg-blue-50/20'; // Left border heavy
-      case 'after': return 'border-r-4 border-blue-500 bg-blue-50/20'; // Right border heavy
+      case 'before': return 'border-dashed border-l-4 border-blue-500 bg-blue-50/20'; // Left border heavy
+      case 'after': return 'border-dashed border-r-4 border-blue-500 bg-blue-50/20'; // Right border heavy
       default: return 'border-transparent hover:border-primary/50';
     }
   };
