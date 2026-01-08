@@ -1,0 +1,170 @@
+
+/* Tree connector lines (base color) */
+:root {
+  --line-color: #cbd5e1;
+  --line-color-dark: #334155;
+  --node-bg: #ffffff;
+  --node-bg-dark: #1e293b;
+  --primary: #2b7cee;
+}
+
+.dark {
+  --line-color: #334155;
+}
+
+/* Container for the list of nodes (siblings) */
+.tree-container {
+  display: flex;
+  justify-content: center;
+  padding-top: 20px;
+  position: relative;
+}
+
+/* Wrapper for a single node (and its children) */
+.tree-node-wrapper {
+  text-align: center;
+  list-style-type: none;
+  position: relative;
+  padding: 20px 10px 0 10px; /* spacing between nodes */
+}
+
+/* Line connectors logic */
+
+/* The vertical line going up from the node to the horizontal connector */
+.tree-node-wrapper::before, .tree-node-wrapper::after {
+  content: '';
+  position: absolute; 
+  top: 0; 
+  right: 50%;
+  border-top: 2px solid var(--line-color);
+  width: 50%; 
+  height: 20px;
+}
+
+.tree-node-wrapper::after {
+  right: auto; 
+  left: 50%;
+  border-left: 2px solid var(--line-color);
+}
+
+/* Remove left connector from first child and right from last child */
+.tree-node-wrapper:only-child::after, .tree-node-wrapper:only-child::before {
+  display: none;
+}
+
+.tree-node-wrapper:only-child { 
+  padding-top: 0;
+}
+
+.tree-node-wrapper:first-child::before {
+  border: 0 none;
+}
+
+.tree-node-wrapper:last-child::after {
+  border: 0 none;
+  border-left: 2px solid var(--line-color); /* We still need the vertical line part though? */
+}
+
+/* Wait, the "standard" css method usually does:
+   ::before is the horizontal line above.
+   ::after is the vertical line connecting that horizontal line to the node below.
+*/
+
+/* Let's redo to be safer and clearer */
+
+.tree-node-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 20px; /* distance from top siblings bar to node */
+  border-right: 2px solid var(--line-color); /* The vertical line part is implied by where boundaries meet? No. */
+  border-top: 2px solid var(--line-color);
+}
+
+.tree-node-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50%;
+  height: 20px;
+  border-top: 2px solid var(--line-color);
+  border-left: 2px solid var(--line-color); /* Only one needs the vertical border really? */
+}
+
+/* We need a vertical line down from the PARENT to the SIBLINGS. 
+   That is handled by the parent component, usually. 
+   Here, OrgChartTree renders the siblings. The Parent Node is rendered one level up.
+*/
+
+/* Correct Logic: */
+.tree-node-wrapper::before, .tree-node-wrapper::after {
+  content: '';
+  position: absolute; top: 0; right: 50%;
+  border-top: 2px solid var(--line-color);
+  width: 50%; height: 20px;
+}
+.tree-node-wrapper::after {
+  right: auto; left: 50%;
+  border-left: 2px solid var(--line-color);
+}
+
+/* Hide line for single child (handled by parent vertical line) or fix corners */
+.tree-node-wrapper:only-child::after, .tree-node-wrapper:only-child::before {
+  display: none;
+}
+.tree-node-wrapper:only-child {
+  padding-top: 0;
+}
+
+/* First child: remove left horizontal line */
+.tree-node-wrapper:first-child::before {
+  border: 0 none;
+}
+.tree-node-wrapper:first-child::after {
+  border-radius: 5px 0 0 0;
+}
+
+/* Last child: remove right horizontal line */
+.tree-node-wrapper:last-child::after {
+  border: 0 none;
+}
+.tree-node-wrapper:last-child::before {
+  border-right: 2px solid var(--line-color);
+  border-radius: 0 5px 0 0;
+}
+
+/* Premium Card Styles */
+.org-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .org-card {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+.org-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-color: var(--primary);
+}
+
+.dark .org-card:hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Vertical line down from a parent node to its children list */
+.line-down {
+  width: 2px;
+  height: 20px;
+  background: var(--line-color);
+  margin: 0 auto;
+}

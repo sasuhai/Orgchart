@@ -1,0 +1,7 @@
+{
+  "name": "OrgChart Pro",
+  "description": "An interactive, high-performance organizational chart manager for scaling teams. Features include infinite canvas navigation, drag-and-drop hierarchy management, and Gemini-powered role research.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

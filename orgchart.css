@@ -1,0 +1,108 @@
+/* Tree connector lines (base color) */
+:root {
+    --line-color: #cbd5e1;
+    --line-color-dark: #334155;
+    --node-bg: #ffffff;
+    --node-bg-dark: #1e293b;
+    --primary: #2b7cee;
+}
+
+.dark {
+    --line-color: #334155;
+}
+
+/* Container for the list of nodes (siblings) */
+.tree-container {
+    display: flex;
+    justify-content: center;
+    /* padding-top: 20px; Removed to verify alignment */
+    position: relative;
+}
+
+/* Wrapper for a single node (and its children) */
+.tree-node-wrapper {
+    text-align: center;
+    list-style-type: none;
+    position: relative;
+    padding: 20px 20px 0 20px;
+    /* increased side spacing */
+}
+
+/* Line connectors logic */
+
+.tree-node-wrapper::before,
+.tree-node-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 50%;
+    border-top: 2px solid var(--line-color);
+    width: 50%;
+    height: 20px;
+}
+
+.tree-node-wrapper::after {
+    right: auto;
+    left: 50%;
+    border-left: 2px solid var(--line-color);
+}
+
+.tree-node-wrapper:only-child::after,
+.tree-node-wrapper:only-child::before {
+    display: none;
+}
+
+.tree-node-wrapper:only-child {
+    padding-top: 0;
+}
+
+.tree-node-wrapper:first-child::before {
+    border: 0 none;
+}
+
+.tree-node-wrapper:first-child::after {
+    border-radius: 5px 0 0 0;
+}
+
+.tree-node-wrapper:last-child::after {
+    border: 0 none;
+}
+
+.tree-node-wrapper:last-child::before {
+    border-right: 2px solid var(--line-color);
+    border-radius: 0 5px 0 0;
+}
+
+/* Premium Card Styles */
+.org-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .org-card {
+    background: rgba(30, 41, 59, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+.org-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border-color: var(--primary);
+    z-index: 20;
+}
+
+.dark .org-card:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Vertical line down from a parent node to its children list */
+.line-down {
+    width: 2px;
+    height: 20px;
+    background: var(--line-color);
+    margin: 0 auto;
+}

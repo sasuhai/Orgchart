@@ -1,0 +1,71 @@
+
+import { Department, Employee } from './types';
+
+export const INITIAL_EMPLOYEES: Employee[] = [
+  {
+    id: '1',
+    name: 'Sarah Jenkins',
+    title: 'Chief Executive Officer',
+    department: Department.Executive,
+    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBcEkYS_fcsHRQrZAyYzcLkjtc0bLcAgkSBdn6chYXboNw-j15tDzcEz4xDWRFMghgkw5VwZJBdI2I0E-8oDyRg2pg7lQ-aafsWO2f_QqwOSXN5HLkhmYrmw3I7j2ig4EutuaqA3v7DUvzmqOAumxlZ2U_QxGffI-m7hETjYkzPOBZpviXgdkC16HKOfmsntqp7X6JYGI3Q7L7wMP6TGALDBVgzJ08oZU7ax3XZNMJ30xkXM5L-q8jNhTkMDZZFEsTNbnouNFjgvJDA',
+    parentId: null,
+    roles: ['Founder', 'Chairman'],
+    description: 'Visionary leader driving company growth and innovation strategy.',
+    email: 's.jenkins@orgpro.com'
+  },
+  {
+    id: '2',
+    name: 'Michael Chen',
+    title: 'Chief Technology Officer',
+    department: Department.Engineering,
+    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCscvys-3O1cFWUUuQVYbFe9ETjEIdYF7bKDh0jX-kD8qOzY24NQYcihc7LCE7DbfBjTu46yALQ0-K4sR3GdnCB01SPo7p6ugHefhYAVdIG6BEeWNeNdEKWHWfOb0IzUjnHjlpHzhQoJpx55CPhkW7o1_1tclNfp13-5HvxFrjgL7vSWONLw9PLPcfKQWyC3MHiwLm439PieRdx6bULYTXfjtooaXp2XGf1_OAuXqC3KFWlxFoWwkCriaYc5K7pHWbvxnIDNoEazZaj',
+    parentId: '1',
+    roles: ['Architecture Lead'],
+    description: 'Oversees technical direction and engineering culture.',
+    email: 'm.chen@orgpro.com'
+  },
+  {
+    id: '3',
+    name: 'Sarah Jones',
+    title: 'Chief Marketing Officer',
+    department: Department.Marketing,
+    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAdCqVX9EQa69aEgOiQspsiXm4DvGhdCMNvoYSrG2RD1ldEld3dGDwsUP1t910jgirS1twjiMTWmQ7udBPFa8Ikpy0fUpST8l_tRzt-Sf7hVRkKE7tJDq-o0BmAinqP-bTbA_L7SL8aci7qMhJAbv4Qa3MvS6c_mKcyjWrUrlJzog24tSLNc6Dp1cDztCmeLyKsiZegRmD18y0-4TsLlUSTphUax9E7Q2hPxGS7fvM1-oTY3TPeh8gmm6YwQ1JgSzQydvjacvf39_Hb',
+    parentId: '1',
+    roles: ['Brand Strategist', 'Growth Head'],
+    description: 'Leading our brand voice and global marketing initiatives.',
+    email: 's.jones@orgpro.com'
+  },
+  {
+    id: '4',
+    name: 'James Wilson',
+    title: 'Chief Financial Officer',
+    department: Department.Finance,
+    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA-QlXKXoBvZ1lMi6cM8jOLlXfsC12Gr_-VLu80yepm0QsiCnlLLvaQohBWyhYnMTaD-wsRiND_DR5ZzVDbtEe0j7grrr3Oe1jW6ruTSQ_KlwamXTQY2UCAWFPT7icmhmX_t8obSl-IOhJD3zk4OLi8TM5cYtm-cZXdz-z3Xa_TIEZp66bnLkn6FnGBg_ECUMnY1dZ09vDFWxIUayx1JY2AmymvKAjGUOPF8WDwfrxbnQOavvY9tISWy1RpdXaZjR1LzWAXkhgpcxAe',
+    parentId: '1',
+    roles: ['Compliance Officer'],
+    description: 'Managing financial risks and corporate strategy.',
+    email: 'j.wilson@orgpro.com'
+  },
+  {
+    id: '5',
+    name: 'David Kim',
+    title: 'VP Engineering',
+    department: Department.Engineering,
+    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBXBgTIYqWEJxXER3GM-yKGQTW1DzSibTf7VM_V2X85iaATC1NvL1Rf-qXgO38CgSPpShTA5iSqCc0joqwXDNOzJnJSOlRfGrisstWVew2OvrT2P5uSVkgsp-JuJKEFF1pF_s5r1bWWfnqs0SMyUUInycyYxIJIQOvPtnRwbjvCZfiJ8ZyUzyXwKzfedLX7lxFHoeR1bE4nQqMNHIkrvsMiD7NuLdaiufP6RpWEBYf19Uh_BO9GG5IXTQ71O6phUQHh2LYN7UV_w1Wr',
+    parentId: '2',
+    roles: ['Engineering Manager'],
+    description: 'Scales engineering teams and platform stability.',
+    email: 'd.kim@orgpro.com'
+  },
+  {
+    id: '6',
+    name: 'Emily Davis',
+    title: 'VP Product',
+    department: Department.Product,
+    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB_SzwiirL7OUVSg5wWoF7fJNQiHOHKbHlI8jyhgkXkMuF_xnHNQ_-y7UvMSkWEIRcKA8Xc555PydRw3v0AbrdA3Co6YD1uSbngLXgpdIumq_xOqpDuTdpKw31uWm-JGyy1RAeLj_1J8AgYZ0pBRpCD8jGz4Ibya-6FEVWaQeU9RoL9oBx-qmgEqmbzDL6tql5E3Pxe_ircBOk7Wj559TdsMFUysfM1FmScX4FSx50eYj-HHH_x1Nj9oQhaheLeRgwiqddToJ5BVDss',
+    parentId: '2',
+    roles: ['Product Owner'],
+    description: 'Aligning product roadmap with business goals.',
+    email: 'e.davis@orgpro.com'
+  }
+];
