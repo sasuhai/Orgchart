@@ -11,7 +11,7 @@ interface TreeProps {
   onSelect: (id: string) => void;
   onAddChild: (id: string) => void;
   showDepartmentAbove: boolean;
-  onMoveNode: (draggedId: string, targetId: string) => void;
+  onMoveNode: (draggedId: string, targetId: string, position: 'inside' | 'before' | 'after') => void;
   expandedIds: Set<string>;
   onToggleExpand: (id: string) => void;
   showPhotos: boolean;

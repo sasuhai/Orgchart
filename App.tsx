@@ -76,7 +76,7 @@ const App: React.FC = () => {
     setInitialParentId(null);
   }, []);
 
-  const handleMoveNode = useCallback((draggedId: string, targetId: string) => {
+  const handleMoveNode = useCallback((draggedId: string, targetId: string, position: 'inside' | 'before' | 'after') => {
     if (draggedId === targetId) return;
 
     setState(prev => {
@@ -85,22 +85,34 @@ const App: React.FC = () => {
 
       if (!draggedNode || !targetNode) return prev;
 
-      // Case 1: Reordering siblings (same parent)
-      if (draggedNode.parentId === targetNode.parentId) {
-        const otherEmployees = prev.employees.filter(e => e.id !== draggedId);
-        const targetIndex = otherEmployees.findIndex(e => e.id === targetId);
+      const otherEmployees = prev.employees.filter(e => e.id !== draggedId);
 
-        // Insert dragged node at target index
-        const newEmployees = [...otherEmployees];
-        newEmployees.splice(targetIndex, 0, draggedNode);
+      // Case 1: Reordering (Insert Before/After)
+      if (position === 'before' || position === 'after') {
+        // If sorting siblings
+        if (draggedNode.parentId === targetNode.parentId) {
+          const targetIndex = otherEmployees.findIndex(e => e.id === targetId);
+          const newEmployees = [...otherEmployees];
+          // If after, insert at index + 1
+          const insertIndex = position === 'after' ? targetIndex + 1 : targetIndex;
+          newEmployees.splice(insertIndex, 0, draggedNode);
+          return { ...prev, employees: newEmployees };
+        } else {
+          // If dragging next to a node that has a DIFFERENT parent (i.e. making it a sibling of target)
+          // We need to change parentId to target's parentId
+          const newParentId = targetNode.parentId;
+          const targetIndex = otherEmployees.findIndex(e => e.id === targetId);
+          const newEmployees = [...otherEmployees];
+          const insertIndex = position === 'after' ? targetIndex + 1 : targetIndex;
 
-        return {
-          ...prev,
-          employees: newEmployees
-        };
+          const updatedDraggedNode = { ...draggedNode, parentId: newParentId };
+          newEmployees.splice(insertIndex, 0, updatedDraggedNode);
+
+          return { ...prev, employees: newEmployees };
+        }
       }
 
-      // Case 2: Reparenting (different parents or different levels)
+      // Case 2: Reparenting (Inside) - Logic basically identical to original "Reparenting" case
       // Helper to check if target is a descendant of dragged (prevent cycles)
       const isDescendant = (parentId: string, childId: string, list: Employee[]): boolean => {
         if (parentId === childId) return true;
@@ -116,6 +128,8 @@ const App: React.FC = () => {
         return prev;
       }
 
+      // Just update parentId, let the standard sort order place it at end (or we could preserve order?)
+      // Standard behavior: Append to end of children list
       return {
         ...prev,
         employees: prev.employees.map(e =>

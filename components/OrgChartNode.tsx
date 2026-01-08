@@ -12,7 +12,7 @@ interface OrgChartNodeProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   showDepartmentAbove: boolean;
-  onMoveNode: (draggedId: string, targetId: string) => void;
+  onMoveNode: (draggedId: string, targetId: string, position: 'inside' | 'before' | 'after') => void;
   showPhotos: boolean;
 }
 
@@ -29,7 +29,7 @@ export const OrgChartNode: React.FC<OrgChartNodeProps> = ({
   onMoveNode,
   showPhotos
 }) => {
-  const [isDragOver, setIsDragOver] = React.useState(false);
+  const [dragOverPosition, setDragOverPosition] = React.useState<'inside' | 'before' | 'after' | null>(null);
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('text/plain', employee.id);
@@ -38,21 +38,34 @@ export const OrgChartNode: React.FC<OrgChartNodeProps> = ({
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault(); // Necessary to allow dropping
-    setIsDragOver(true);
     e.dataTransfer.dropEffect = 'move';
+
+    // Calculate drop zone
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+
+    // Define zones: 25% left (before), 50% middle (inside), 25% right (after)
+    if (x < width * 0.25) {
+      setDragOverPosition('before');
+    } else if (x > width * 0.75) {
+      setDragOverPosition('after');
+    } else {
+      setDragOverPosition('inside');
+    }
   };
 
   const handleDragLeave = () => {
-    setIsDragOver(false);
+    setDragOverPosition(null);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragOver(false);
     const draggedId = e.dataTransfer.getData('text/plain');
-    if (draggedId) {
-      onMoveNode(draggedId, employee.id);
+    if (draggedId && dragOverPosition) {
+      onMoveNode(draggedId, employee.id, dragOverPosition);
     }
+    setDragOverPosition(null);
   };
 
   const getDeptColor = (dept: Department) => {
@@ -67,6 +80,16 @@ export const OrgChartNode: React.FC<OrgChartNodeProps> = ({
   };
 
   const hasDepartment = employee.department && employee.department.trim() !== '';
+
+  // Helper for conditional border styles
+  const getDragStyle = () => {
+    switch (dragOverPosition) {
+      case 'inside': return 'border-dashed border-4 border-green-500 bg-green-50/50 dark:bg-green-900/20';
+      case 'before': return 'border-l-4 border-blue-500 bg-blue-50/20'; // Left border heavy
+      case 'after': return 'border-r-4 border-blue-500 bg-blue-50/20'; // Right border heavy
+      default: return 'border-transparent hover:border-primary/50';
+    }
+  };
 
   return (
     <div className="flex flex-col items-center group">
@@ -91,9 +114,9 @@ export const OrgChartNode: React.FC<OrgChartNodeProps> = ({
         onDrop={handleDrop}
         onClick={() => onSelect(employee.id)}
         className={`
-          relative w-60 org-card rounded-xl cursor-pointer z-10 p-3 flex items-center gap-3 border-2
+          relative w-60 org-card rounded-xl cursor-pointer z-10 p-3 flex items-center gap-3 border-2 transition-all
           ${isSelected ? 'border-primary ring-2 ring-primary/20' : ''}
-          ${isDragOver ? 'border-dashed border-4 border-green-500 bg-green-50/50 dark:bg-green-900/20' : 'border-transparent hover:border-primary/50'}
+          ${dragOverPosition ? getDragStyle() : 'border-transparent hover:border-primary/50'}
           ${isFound ? 'found-card' : ''}
         `}
       >
