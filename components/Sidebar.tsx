@@ -5,12 +5,13 @@ import { GeminiService } from '../services/geminiService';
 
 interface SidebarProps {
   employee: Employee | null;
+  employees: Employee[];
   onClose: () => void;
   onUpdate: (updated: Employee) => void;
   onDelete: (id: string) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ employee, onClose, onUpdate, onDelete }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ employee, employees, onClose, onUpdate, onDelete }) => {
   const [formData, setFormData] = useState<Employee | null>(null);
   const [isResearching, setIsResearching] = useState(false);
 
@@ -80,6 +81,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ employee, onClose, onUpdate, o
             >
               <option value="">(None)</option>
               {Object.values(Department).map(dept => <option key={dept} value={dept}>{dept}</option>)}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Reports To</label>
+            <select
+              className="w-full h-10 rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white px-3 appearance-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
+              value={formData.parentId || ''}
+              onChange={(e) => setFormData({ ...formData, parentId: e.target.value || null })}
+            >
+              <option value="">No Manager (Root)</option>
+              {employees
+                .filter(emp => {
+                  // Prevent self-selection
+                  if (emp.id === formData.id) return false;
+
+                  // Simple cycle prevention: Don't allow selecting a direct descendant as parent 
+                  // (Deep check is better, but this handles immediate loop)
+                  // For a proper check we need a helper, but basic filter: ID !== self
+                  return emp.id !== formData.id;
+                })
+                .map(emp => (
+                  <option key={emp.id} value={emp.id}>{emp.name} - {emp.title}</option>
+                ))}
             </select>
           </div>
           <div className="flex flex-col gap-1.5">

@@ -291,6 +291,7 @@ const App: React.FC = () => {
 
         <Sidebar
           employee={state.employees.find(e => e.id === state.selectedEmployeeId) || null}
+          employees={state.employees}
           onClose={() => setState(prev => ({ ...prev, selectedEmployeeId: null }))}
           onUpdate={handleUpdate}
           onDelete={handleDelete}
