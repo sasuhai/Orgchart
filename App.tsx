@@ -1,207 +1,38 @@
 
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Header } from './components/Header';
-import { OrgChartTree } from './components/OrgChartTree';
-import { Sidebar } from './components/Sidebar';
-import { OnboardingForm } from './components/OnboardingForm';
+import { Home } from './src/pages/Home';
+import { D01 } from './src/pages/D01';
+import { D02 } from './src/pages/D02';
 import { INITIAL_EMPLOYEES } from './constants';
-import { Employee, TreeState } from './types';
+import { Employee } from './types';
 
 const LOCAL_STORAGE_KEY = 'org-chart-data-v1';
 
 const App: React.FC = () => {
-  const [state, setState] = useState<TreeState>(() => {
+  const [employees, setEmployees] = useState<Employee[]>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    const initialEmployees = saved ? JSON.parse(saved) : INITIAL_EMPLOYEES;
-    return {
-      employees: initialEmployees,
-      selectedEmployeeId: null,
-      searchQuery: '',
-      zoom: 1,
-      showDepartmentAbove: false,
-      expandedIds: new Set(initialEmployees.map((e: any) => e.id)),
-      showPhotos: true,
-      isEditMode: false
-    };
+    return saved ? JSON.parse(saved) : INITIAL_EMPLOYEES;
   });
 
-  useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state.employees));
-  }, [state.employees]);
-
-  const [isOnboarding, setIsOnboarding] = useState(false);
-  const [initialParentId, setInitialParentId] = useState<string | null>(null);
-
-  const foundEmployees = useMemo(() => {
-    if (!state.searchQuery) return [];
-    return state.employees
-      .filter(e => e.name.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
-        e.title.toLowerCase().includes(state.searchQuery.toLowerCase()))
-      .map(e => e.id);
-  }, [state.employees, state.searchQuery]);
-  const handleSelect = useCallback((id: string) => {
-    setState(prev => ({ ...prev, selectedEmployeeId: id }));
-  }, []);
-
-  const handleUpdate = useCallback((updated: Employee) => {
-    setState(prev => ({
-      ...prev,
-      employees: prev.employees.map(e => e.id === updated.id ? updated : e),
-      selectedEmployeeId: null
-    }));
-  }, []);
-
-  const handleDelete = useCallback((id: string) => {
-    setState(prev => ({
-      ...prev,
-      employees: prev.employees.filter(e => e.id !== id).map(e => e.parentId === id ? { ...e, parentId: null } : e),
-      selectedEmployeeId: null
-    }));
-  }, []);
-
-  const handleAddChild = useCallback((parentId: string) => {
-    setInitialParentId(parentId);
-    setIsOnboarding(true);
-  }, []);
-
-  const handleOnboardSave = useCallback((data: Partial<Employee>) => {
-    const newEmployee: Employee = {
-      id: Date.now().toString(),
-      name: data.name || 'Unknown',
-      title: data.title || 'Untitled Role',
-      department: data.department!,
-      imageUrl: data.imageUrl || `https://picsum.photos/200/200?random=${Date.now()}`,
-      parentId: data.parentId || null,
-      roles: [],
-      description: data.description || '',
-      email: data.email || ''
-    };
-    setState(prev => ({
-      ...prev,
-      employees: [...prev.employees, newEmployee],
-      expandedIds: new Set([...prev.expandedIds, newEmployee.id])
-    }));
-    setIsOnboarding(false);
-    setInitialParentId(null);
-  }, []);
-
-  const handleMoveNode = useCallback((draggedId: string, targetId: string, position: 'inside' | 'before' | 'after') => {
-    if (draggedId === targetId) return;
-
-    setState(prev => {
-      const draggedNode = prev.employees.find(e => e.id === draggedId);
-      const targetNode = prev.employees.find(e => e.id === targetId);
-
-      if (!draggedNode || !targetNode) return prev;
-
-      const otherEmployees = prev.employees.filter(e => e.id !== draggedId);
-
-      if (position === 'before' || position === 'after') {
-        if (draggedNode.parentId === targetNode.parentId) {
-          const targetIndex = otherEmployees.findIndex(e => e.id === targetId);
-          const newEmployees = [...otherEmployees];
-          const insertIndex = position === 'after' ? targetIndex + 1 : targetIndex;
-          newEmployees.splice(insertIndex, 0, draggedNode);
-          return { ...prev, employees: newEmployees };
-        } else {
-          const newParentId = targetNode.parentId;
-          const targetIndex = otherEmployees.findIndex(e => e.id === targetId);
-          const newEmployees = [...otherEmployees];
-          const insertIndex = position === 'after' ? targetIndex + 1 : targetIndex;
-          const updatedDraggedNode = { ...draggedNode, parentId: newParentId };
-          newEmployees.splice(insertIndex, 0, updatedDraggedNode);
-          return { ...prev, employees: newEmployees };
-        }
-      }
-
-      const isDescendant = (parentId: string, childId: string, list: Employee[]): boolean => {
-        if (parentId === childId) return true;
-        const children = list.filter(e => e.parentId === parentId);
-        for (const child of children) {
-          if (isDescendant(child.id, childId, list)) return true;
-        }
-        return false;
-      };
-
-      if (isDescendant(draggedId, targetId, prev.employees)) {
-        console.warn("Cannot move a node into its own descendant");
-        return prev;
-      }
-
-      return {
-        ...prev,
-        employees: prev.employees.map(e =>
-          e.id === draggedId ? { ...e, parentId: targetId } : e
-        )
-      };
-    });
-  }, []);
-
-  const handleZoom = (delta: number) => {
-    setState(prev => ({ ...prev, zoom: Math.min(Math.max(0.5, prev.zoom + delta), 2) }));
-  };
-
-  const checkAllExpanded = useMemo(() => {
-    return state.expandedIds.size === state.employees.length;
-  }, [state.expandedIds, state.employees]);
-
-  const handleToggleExpandAll = () => {
-    if (state.expandedIds.size > 0) {
-      setState(prev => ({ ...prev, expandedIds: new Set() }));
-    } else {
-      setState(prev => ({ ...prev, expandedIds: new Set(prev.employees.map(e => e.id)) }));
-    }
-  };
-
-  const handleToggleNode = (id: string) => {
-    setState(prev => {
-      const next = new Set(prev.expandedIds);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return { ...prev, expandedIds: next };
-    });
-  };
-
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
-  const [scrollPos, setScrollPos] = useState({ left: 0, top: 0 });
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!containerRef.current) return;
-    setIsDragging(true);
-    setStartPos({ x: e.pageX, y: e.pageY });
-    setScrollPos({
-      left: containerRef.current.scrollLeft,
-      top: containerRef.current.scrollTop
-    });
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !containerRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - startPos.x;
-    const y = e.pageY - startPos.y;
-    containerRef.current.scrollLeft = scrollPos.left - x;
-    containerRef.current.scrollTop = scrollPos.top - y;
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
+  const [searchQuery, setSearchQuery] = useState('');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const [fileHandle, setFileHandle] = useState<any>(null);
 
-  const lastSavedEmployees = useRef(state.employees);
+  const lastSavedEmployees = useRef(employees);
+
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(employees));
+  }, [employees]);
 
   // Autosave or update status on changes
   useEffect(() => {
     // Skip if data hasn't changed (reference check works because we use immutable updates)
-    if (state.employees === lastSavedEmployees.current) {
+    if (employees === lastSavedEmployees.current) {
       return;
     }
-    lastSavedEmployees.current = state.employees;
+    lastSavedEmployees.current = employees;
 
     let timeoutId: any;
 
@@ -210,7 +41,7 @@ const App: React.FC = () => {
         setSaveStatus('saving');
         try {
           const writable = await fileHandle.createWritable();
-          await writable.write(JSON.stringify(state.employees, null, 2));
+          await writable.write(JSON.stringify(employees, null, 2));
           await writable.close();
           setSaveStatus('saved');
         } catch (err) {
@@ -226,7 +57,7 @@ const App: React.FC = () => {
     timeoutId = setTimeout(saveData, 1000);
 
     return () => clearTimeout(timeoutId);
-  }, [state.employees, fileHandle]);
+  }, [employees, fileHandle]);
 
   // Warn on closing if unsaved
   useEffect(() => {
@@ -240,6 +71,67 @@ const App: React.FC = () => {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [saveStatus]);
+
+  const handleUpdate = useCallback((updated: Employee) => {
+    setEmployees(prev => prev.map(e => e.id === updated.id ? updated : e));
+  }, []);
+
+  const handleDelete = useCallback((id: string) => {
+    setEmployees(prev => prev.filter(e => e.id !== id).map(e => e.parentId === id ? { ...e, parentId: null } : e));
+  }, []);
+
+  const handleAddEmployee = useCallback((newEmployee: Employee) => {
+    setEmployees(prev => [...prev, newEmployee]);
+  }, []);
+
+  const handleMoveNode = useCallback((draggedId: string, targetId: string, position: 'inside' | 'before' | 'after') => {
+    if (draggedId === targetId) return;
+
+    setEmployees(prev => {
+      const draggedNode = prev.find(e => e.id === draggedId);
+      const targetNode = prev.find(e => e.id === targetId);
+
+      if (!draggedNode || !targetNode) return prev;
+
+      const otherEmployees = prev.filter(e => e.id !== draggedId);
+
+      if (position === 'before' || position === 'after') {
+        if (draggedNode.parentId === targetNode.parentId) {
+          const targetIndex = otherEmployees.findIndex(e => e.id === targetId);
+          const newEmployees = [...otherEmployees];
+          const insertIndex = position === 'after' ? targetIndex + 1 : targetIndex;
+          newEmployees.splice(insertIndex, 0, draggedNode);
+          return newEmployees;
+        } else {
+          const newParentId = targetNode.parentId;
+          const targetIndex = otherEmployees.findIndex(e => e.id === targetId);
+          const newEmployees = [...otherEmployees];
+          const insertIndex = position === 'after' ? targetIndex + 1 : targetIndex;
+          const updatedDraggedNode = { ...draggedNode, parentId: newParentId };
+          newEmployees.splice(insertIndex, 0, updatedDraggedNode);
+          return newEmployees;
+        }
+      }
+
+      const isDescendant = (parentId: string, childId: string, list: Employee[]): boolean => {
+        if (parentId === childId) return true;
+        const children = list.filter(e => e.parentId === parentId);
+        for (const child of children) {
+          if (isDescendant(child.id, childId, list)) return true;
+        }
+        return false;
+      };
+
+      if (isDescendant(draggedId, targetId, prev)) {
+        console.warn("Cannot move a node into its own descendant");
+        return prev;
+      }
+
+      return prev.map(e =>
+        e.id === draggedId ? { ...e, parentId: targetId } : e
+      );
+    });
+  }, []);
 
   const handleImport = useCallback(async () => {
     if (!window.confirm("Importing data will overwrite existing data. Continue?")) return;
@@ -256,12 +148,7 @@ const App: React.FC = () => {
         // Sync ref to prevent autosave effect from firing immediately
         lastSavedEmployees.current = data;
 
-        setState(prev => ({
-          ...prev,
-          employees: data,
-          expandedIds: new Set(data.map((e: any) => e.id)),
-          selectedEmployeeId: null
-        }));
+        setEmployees(data);
         setFileHandle(handle);
         setSaveStatus('saved');
       } else {
@@ -281,148 +168,44 @@ const App: React.FC = () => {
         suggestedName: 'orgchart_data.json'
       });
       const writable = await handle.createWritable();
-      await writable.write(JSON.stringify(state.employees, null, 2));
+      await writable.write(JSON.stringify(employees, null, 2));
       await writable.close();
       setFileHandle(handle);
       setSaveStatus('saved');
       // Sync ref to current state to consider this "saved"
-      lastSavedEmployees.current = state.employees;
+      lastSavedEmployees.current = employees;
     } catch (err) {
       console.error(err);
     }
-  }, [state.employees]);
+  }, [employees]);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <Header
-        searchQuery={state.searchQuery}
-        onSearchChange={(q) => setState(prev => ({ ...prev, searchQuery: q }))}
-        onExport={() => handleExport(true)}
-        onImport={handleImport}
-        saveStatus={saveStatus}
-      />
+    <BrowserRouter>
+      <div className="flex flex-col h-screen overflow-hidden">
+        <Header
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onExport={() => handleExport(true)}
+          onImport={handleImport}
+          saveStatus={saveStatus}
+        />
 
-      <div className="flex flex-1 overflow-hidden relative">
-        <main
-          ref={containerRef}
-          className={`flex-1 relative overflow-auto bg-background-light dark:bg-background-dark bg-grid-pattern ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-        >
-          <div
-            className="min-w-full w-fit min-h-full flex flex-col pt-20 pb-40 px-20 origin-top transition-transform duration-300"
-            id="chart-canvas"
-            style={{ transform: `scale(${state.zoom})` }}
-          >
-            <OrgChartTree
-              employees={state.employees}
-              parentId={null}
-              selectedEmployeeId={state.selectedEmployeeId}
-              foundEmployeeIds={foundEmployees}
-              onSelect={handleSelect}
-              onAddChild={handleAddChild}
-              showDepartmentAbove={state.showDepartmentAbove}
+        <Routes>
+          <Route path="/" element={
+            <Home
+              employees={employees}
+              searchQuery={searchQuery}
+              onUpdate={handleUpdate}
+              onDelete={handleDelete}
+              onAddEmployee={handleAddEmployee}
               onMoveNode={handleMoveNode}
-              expandedIds={state.expandedIds}
-              onToggleExpand={handleToggleNode}
-              showPhotos={state.showPhotos}
-              isEditMode={state.isEditMode}
             />
-          </div>
-
-          {/* Floating Toolbar */}
-          < div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40" >
-            <div className="flex items-center gap-1 p-2 bg-white/90 dark:bg-[#1e293b]/90 backdrop-blur-md rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 dark:border-gray-700">
-
-              {/* Edit Mode Toggle */}
-              <button
-                onClick={() => setState(prev => ({ ...prev, isEditMode: !prev.isEditMode }))}
-                className={`p-2.5 rounded-lg transition-colors ${state.isEditMode
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-none'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-                title={state.isEditMode ? "Switch to View Only" : "Switch to Edit Mode"}
-              >
-                <span className="material-symbols-outlined text-xl">{state.isEditMode ? 'edit' : 'visibility'}</span>
-              </button>
-
-              <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1"></div>
-
-              <button
-                onClick={() => setState(prev => ({ ...prev, showDepartmentAbove: !prev.showDepartmentAbove }))}
-                className={`p-2.5 rounded-lg transition-colors ${state.showDepartmentAbove ? 'text-primary bg-primary/10' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                title={state.showDepartmentAbove ? "Show Department Inside Card" : "Show Department Above Card"}
-              >
-                <span className="material-symbols-outlined text-xl">domain</span>
-              </button>
-
-              <button
-                onClick={() => setState(prev => ({ ...prev, showPhotos: !prev.showPhotos }))}
-                className={`p-2.5 rounded-lg transition-colors ${state.showPhotos ? 'text-primary bg-primary/10' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                title={state.showPhotos ? "Hide Photos" : "Show Photos"}
-              >
-                <span className="material-symbols-outlined text-xl">image</span>
-              </button>
-
-              <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1"></div>
-
-              <button
-                onClick={handleToggleExpandAll}
-                className={`p-2.5 rounded-lg transition-colors ${state.expandedIds.size > 0 ? 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' : 'text-gray-400'}`}
-                title={state.expandedIds.size > 0 ? "Collapse All" : "Expand All"}
-              >
-                <span className="material-symbols-outlined text-xl">{state.expandedIds.size > 0 ? 'unfold_less' : 'unfold_more'}</span>
-              </button>
-
-              <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1"></div>
-
-              <button onClick={() => handleZoom(0.1)} className="p-2.5 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" title="Zoom In">
-                <span className="material-symbols-outlined text-xl">add</span>
-              </button>
-              <button onClick={() => handleZoom(-0.1)} className="p-2.5 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" title="Zoom Out">
-                <span className="material-symbols-outlined text-xl">remove</span>
-              </button>
-              <button onClick={() => setState(prev => ({ ...prev, zoom: 1 }))} className="p-2.5 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" title="Reset Zoom">
-                <span className="material-symbols-outlined text-xl">center_focus_strong</span>
-              </button>
-
-              {state.isEditMode && (
-                <>
-                  <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1"></div>
-                  <button
-                    onClick={() => { setInitialParentId(null); setIsOnboarding(true); }}
-                    className="flex items-center justify-center p-2.5 bg-primary hover:bg-blue-600 text-white rounded-lg transition-colors"
-                    title="Add New Node"
-                  >
-                    <span className="material-symbols-outlined text-xl">person_add</span>
-                  </button>
-                </>
-              )}
-            </div>
-          </div >
-        </main >
-
-        <Sidebar
-          employee={state.employees.find(e => e.id === state.selectedEmployeeId) || null}
-          employees={state.employees}
-          onClose={() => setState(prev => ({ ...prev, selectedEmployeeId: null }))}
-          onUpdate={handleUpdate}
-          onDelete={handleDelete}
-          isEditMode={state.isEditMode}
-        />
-      </div >
-
-      {isOnboarding && (
-        <OnboardingForm
-          onClose={() => setIsOnboarding(false)}
-          onSave={handleOnboardSave}
-          employees={state.employees}
-          initialParentId={initialParentId}
-        />
-      )}
-    </div >
+          } />
+          <Route path="/d01" element={<D01 employees={employees} />} />
+          <Route path="/d02" element={<D02 employees={employees} />} />
+        </Routes>
+      </div>
+    </BrowserRouter>
   );
 };
 
