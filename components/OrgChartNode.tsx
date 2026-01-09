@@ -14,6 +14,7 @@ interface OrgChartNodeProps {
   showDepartmentAbove: boolean;
   onMoveNode: (draggedId: string, targetId: string, position: 'inside' | 'before' | 'after') => void;
   showPhotos: boolean;
+  isEditMode: boolean;
 }
 
 export const OrgChartNode: React.FC<OrgChartNodeProps> = ({
@@ -27,16 +28,19 @@ export const OrgChartNode: React.FC<OrgChartNodeProps> = ({
   onToggleExpand,
   showDepartmentAbove,
   onMoveNode,
-  showPhotos
+  showPhotos,
+  isEditMode
 }) => {
   const [dragOverPosition, setDragOverPosition] = React.useState<'inside' | 'before' | 'after' | null>(null);
 
   const handleDragStart = (e: React.DragEvent) => {
+    if (!isEditMode) return;
     e.dataTransfer.setData('text/plain', employee.id);
     e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDragOver = (e: React.DragEvent) => {
+    if (!isEditMode) return;
     e.preventDefault(); // Necessary to allow dropping
     e.dataTransfer.dropEffect = 'move';
 
@@ -55,11 +59,14 @@ export const OrgChartNode: React.FC<OrgChartNodeProps> = ({
     }
   };
 
-  const handleDragLeave = () => {
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Prevent flickering when dragging over children
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
     setDragOverPosition(null);
   };
 
   const handleDrop = (e: React.DragEvent) => {
+    if (!isEditMode) return;
     e.preventDefault();
     const draggedId = e.dataTransfer.getData('text/plain');
     if (draggedId && dragOverPosition) {
@@ -84,9 +91,9 @@ export const OrgChartNode: React.FC<OrgChartNodeProps> = ({
   // Helper for conditional border styles
   const getDragStyle = () => {
     switch (dragOverPosition) {
-      case 'inside': return 'border-dashed border-4 border-green-500 bg-green-50/50 dark:bg-green-900/20';
-      case 'before': return 'border-dashed border-l-4 border-blue-500 bg-blue-50/20'; // Left border heavy
-      case 'after': return 'border-dashed border-r-4 border-blue-500 bg-blue-50/20'; // Right border heavy
+      case 'inside': return 'drag-target-inside';
+      case 'before': return 'drag-target-before'; // Left border heavy
+      case 'after': return 'drag-target-after'; // Right border heavy
       default: return 'border-transparent hover:border-primary/50';
     }
   };
@@ -107,7 +114,7 @@ export const OrgChartNode: React.FC<OrgChartNodeProps> = ({
       )}
 
       <div
-        draggable
+        draggable={isEditMode}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -116,17 +123,18 @@ export const OrgChartNode: React.FC<OrgChartNodeProps> = ({
         className={`
           relative w-60 org-card rounded-xl cursor-pointer z-10 p-3 flex items-center gap-3 border-2 transition-all
           ${isSelected ? 'border-primary ring-2 ring-primary/20' : ''}
-          ${dragOverPosition ? getDragStyle() : 'border-transparent hover:border-primary/50'}
+          ${dragOverPosition && isEditMode ? getDragStyle() : 'border-transparent hover:border-primary/50'}
           ${isFound ? 'found-card' : ''}
+          ${!isEditMode ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}
         `}
       >
         {showPhotos && (
           <div
-            className="w-10 h-10 rounded-full bg-cover bg-center shrink-0 shadow-sm"
+            className="w-10 h-10 rounded-full bg-cover bg-center shrink-0 shadow-sm pointer-events-none"
             style={{ backgroundImage: `url(${employee.imageUrl})` }}
           ></div>
         )}
-        <div className="flex flex-col min-w-0 flex-1">
+        <div className="flex flex-col min-w-0 flex-1 pointer-events-none">
           <h3 className="text-[#111418] dark:text-white text-sm font-bold truncate">{employee.name}</h3>
           <p className="text-gray-600 dark:text-gray-300 text-xs font-medium truncate">{employee.title}</p>
 
@@ -150,7 +158,8 @@ export const OrgChartNode: React.FC<OrgChartNodeProps> = ({
         )}
       </div>
 
-      {!hasChildren && (
+      {/* Add Child Button - Only in Edit Mode */}
+      {isEditMode && !hasChildren && (
         <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={() => onAddChild(employee.id)}

@@ -29,4 +29,5 @@ export interface TreeState {
   showDepartmentAbove: boolean;
   expandedIds: Set<string>;
   showPhotos: boolean;
+  isEditMode: boolean;
 }

@@ -15,6 +15,7 @@ interface TreeProps {
   expandedIds: Set<string>;
   onToggleExpand: (id: string) => void;
   showPhotos: boolean;
+  isEditMode: boolean;
 }
 
 export const OrgChartTree: React.FC<TreeProps> = ({
@@ -28,7 +29,8 @@ export const OrgChartTree: React.FC<TreeProps> = ({
   onMoveNode,
   expandedIds,
   onToggleExpand,
-  showPhotos
+  showPhotos,
+  isEditMode
 }) => {
   const currentLevelEmployees = employees.filter(e => e.parentId === parentId);
 
@@ -54,6 +56,7 @@ export const OrgChartTree: React.FC<TreeProps> = ({
               showDepartmentAbove={showDepartmentAbove}
               onMoveNode={onMoveNode}
               showPhotos={showPhotos}
+              isEditMode={isEditMode}
             />
 
             {/* Sub-tree */}
@@ -72,6 +75,7 @@ export const OrgChartTree: React.FC<TreeProps> = ({
                   expandedIds={expandedIds}
                   onToggleExpand={onToggleExpand}
                   showPhotos={showPhotos}
+                  isEditMode={isEditMode}
                 />
               </>
             )}

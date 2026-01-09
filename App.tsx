@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Header } from './components/Header';
 import { OrgChartTree } from './components/OrgChartTree';
 import { Sidebar } from './components/Sidebar';
@@ -7,17 +7,27 @@ import { OnboardingForm } from './components/OnboardingForm';
 import { INITIAL_EMPLOYEES } from './constants';
 import { Employee, TreeState } from './types';
 
+const LOCAL_STORAGE_KEY = 'org-chart-data';
+
 const App: React.FC = () => {
-  const [state, setState] = useState<TreeState>({
-    // Fix typo from INITIAL_EMPLOYES to INITIAL_EMPLOYEES
-    employees: INITIAL_EMPLOYEES,
-    selectedEmployeeId: null,
-    searchQuery: '',
-    zoom: 1,
-    showDepartmentAbove: false,
-    expandedIds: new Set(INITIAL_EMPLOYEES.map(e => e.id)),
-    showPhotos: true
+  const [state, setState] = useState<TreeState>(() => {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const initialEmployees = saved ? JSON.parse(saved) : INITIAL_EMPLOYEES;
+    return {
+      employees: initialEmployees,
+      selectedEmployeeId: null,
+      searchQuery: '',
+      zoom: 1,
+      showDepartmentAbove: false,
+      expandedIds: new Set(initialEmployees.map((e: any) => e.id)),
+      showPhotos: true,
+      isEditMode: false
+    };
   });
+
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state.employees));
+  }, [state.employees]);
 
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [initialParentId, setInitialParentId] = useState<string | null>(null);
@@ -29,7 +39,6 @@ const App: React.FC = () => {
         e.title.toLowerCase().includes(state.searchQuery.toLowerCase()))
       .map(e => e.id);
   }, [state.employees, state.searchQuery]);
-
   const handleSelect = useCallback((id: string) => {
     setState(prev => ({ ...prev, selectedEmployeeId: id }));
   }, []);
@@ -70,7 +79,7 @@ const App: React.FC = () => {
     setState(prev => ({
       ...prev,
       employees: [...prev.employees, newEmployee],
-      expandedIds: new Set([...prev.expandedIds, newEmployee.id]) // Auto-expand new/parent? Maybe not needed strictly but safe
+      expandedIds: new Set([...prev.expandedIds, newEmployee.id])
     }));
     setIsOnboarding(false);
     setInitialParentId(null);
@@ -87,33 +96,24 @@ const App: React.FC = () => {
 
       const otherEmployees = prev.employees.filter(e => e.id !== draggedId);
 
-      // Case 1: Reordering (Insert Before/After)
       if (position === 'before' || position === 'after') {
-        // If sorting siblings
         if (draggedNode.parentId === targetNode.parentId) {
           const targetIndex = otherEmployees.findIndex(e => e.id === targetId);
           const newEmployees = [...otherEmployees];
-          // If after, insert at index + 1
           const insertIndex = position === 'after' ? targetIndex + 1 : targetIndex;
           newEmployees.splice(insertIndex, 0, draggedNode);
           return { ...prev, employees: newEmployees };
         } else {
-          // If dragging next to a node that has a DIFFERENT parent (i.e. making it a sibling of target)
-          // We need to change parentId to target's parentId
           const newParentId = targetNode.parentId;
           const targetIndex = otherEmployees.findIndex(e => e.id === targetId);
           const newEmployees = [...otherEmployees];
           const insertIndex = position === 'after' ? targetIndex + 1 : targetIndex;
-
           const updatedDraggedNode = { ...draggedNode, parentId: newParentId };
           newEmployees.splice(insertIndex, 0, updatedDraggedNode);
-
           return { ...prev, employees: newEmployees };
         }
       }
 
-      // Case 2: Reparenting (Inside) - Logic basically identical to original "Reparenting" case
-      // Helper to check if target is a descendant of dragged (prevent cycles)
       const isDescendant = (parentId: string, childId: string, list: Employee[]): boolean => {
         if (parentId === childId) return true;
         const children = list.filter(e => e.parentId === parentId);
@@ -128,8 +128,6 @@ const App: React.FC = () => {
         return prev;
       }
 
-      // Just update parentId, let the standard sort order place it at end (or we could preserve order?)
-      // Standard behavior: Append to end of children list
       return {
         ...prev,
         employees: prev.employees.map(e =>
@@ -144,19 +142,13 @@ const App: React.FC = () => {
   };
 
   const checkAllExpanded = useMemo(() => {
-    // Basic heuristic: check if expandedIds size covers most employees, or just simply if it's > 0
-    // Better: toggle between "Expand All" and "Collapse All"
-    // For simplicity, let's provide two buttons or a smart toggle.
-    // Let's implement independent buttons for expand all / collapse all.
     return state.expandedIds.size === state.employees.length;
   }, [state.expandedIds, state.employees]);
 
   const handleToggleExpandAll = () => {
     if (state.expandedIds.size > 0) {
-      // If any expanded, collapse all
       setState(prev => ({ ...prev, expandedIds: new Set() }));
     } else {
-      // Expand all
       setState(prev => ({ ...prev, expandedIds: new Set(prev.employees.map(e => e.id)) }));
     }
   };
@@ -170,7 +162,6 @@ const App: React.FC = () => {
     });
   };
 
-  // Panning State
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
@@ -199,12 +190,116 @@ const App: React.FC = () => {
     setIsDragging(false);
   };
 
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+  const [fileHandle, setFileHandle] = useState<any>(null);
+
+  const lastSavedEmployees = useRef(state.employees);
+
+  // Autosave or update status on changes
+  useEffect(() => {
+    // Skip if data hasn't changed (reference check works because we use immutable updates)
+    if (state.employees === lastSavedEmployees.current) {
+      return;
+    }
+    lastSavedEmployees.current = state.employees;
+
+    let timeoutId: any;
+
+    const saveData = async () => {
+      if (fileHandle) {
+        setSaveStatus('saving');
+        try {
+          const writable = await fileHandle.createWritable();
+          await writable.write(JSON.stringify(state.employees, null, 2));
+          await writable.close();
+          setSaveStatus('saved');
+        } catch (err) {
+          console.error("Autosave failed", err);
+          setSaveStatus('unsaved');
+        }
+      } else {
+        setSaveStatus('unsaved');
+      }
+    };
+
+    // Debounce save
+    timeoutId = setTimeout(saveData, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [state.employees, fileHandle]);
+
+  // Warn on closing if unsaved
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (saveStatus === 'unsaved') {
+        e.preventDefault();
+        e.returnValue = ''; // Chrome requires returnValue to be set
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [saveStatus]);
+
+  const handleImport = useCallback(async () => {
+    if (!window.confirm("Importing data will overwrite existing data. Continue?")) return;
+    try {
+      // @ts-ignore - File System Access API
+      const [handle] = await window.showOpenFilePicker({
+        types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }],
+      });
+      const file = await handle.getFile();
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      if (Array.isArray(data)) {
+        // Sync ref to prevent autosave effect from firing immediately
+        lastSavedEmployees.current = data;
+
+        setState(prev => ({
+          ...prev,
+          employees: data,
+          expandedIds: new Set(data.map((e: any) => e.id)),
+          selectedEmployeeId: null
+        }));
+        setFileHandle(handle);
+        setSaveStatus('saved');
+      } else {
+        alert("Invalid JSON data format");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  const handleExport = useCallback(async (shouldConfirm = true) => {
+    if (shouldConfirm && !window.confirm("Export data to a new file?")) return;
+    try {
+      // @ts-ignore - File System Access API
+      const handle = await window.showSaveFilePicker({
+        types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }],
+        suggestedName: 'orgchart_data.json'
+      });
+      const writable = await handle.createWritable();
+      await writable.write(JSON.stringify(state.employees, null, 2));
+      await writable.close();
+      setFileHandle(handle);
+      setSaveStatus('saved');
+      // Sync ref to current state to consider this "saved"
+      lastSavedEmployees.current = state.employees;
+    } catch (err) {
+      console.error(err);
+    }
+  }, [state.employees]);
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <Header
         searchQuery={state.searchQuery}
         onSearchChange={(q) => setState(prev => ({ ...prev, searchQuery: q }))}
-        onExport={() => alert('Exporting organizational data to PDF/JSON...')}
+        onExport={() => handleExport(true)}
+        onImport={handleImport}
+        saveStatus={saveStatus}
       />
 
       <div className="flex flex-1 overflow-hidden relative">
@@ -233,12 +328,28 @@ const App: React.FC = () => {
               expandedIds={state.expandedIds}
               onToggleExpand={handleToggleNode}
               showPhotos={state.showPhotos}
+              isEditMode={state.isEditMode}
             />
           </div>
 
           {/* Floating Toolbar */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40">
+          < div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40" >
             <div className="flex items-center gap-1 p-2 bg-white/90 dark:bg-[#1e293b]/90 backdrop-blur-md rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 dark:border-gray-700">
+
+              {/* Edit Mode Toggle */}
+              <button
+                onClick={() => setState(prev => ({ ...prev, isEditMode: !prev.isEditMode }))}
+                className={`p-2.5 rounded-lg transition-colors ${state.isEditMode
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-none'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                title={state.isEditMode ? "Switch to View Only" : "Switch to Edit Mode"}
+              >
+                <span className="material-symbols-outlined text-xl">{state.isEditMode ? 'edit' : 'visibility'}</span>
+              </button>
+
+              <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1"></div>
+
               <button
                 onClick={() => setState(prev => ({ ...prev, showDepartmentAbove: !prev.showDepartmentAbove }))}
                 className={`p-2.5 rounded-lg transition-colors ${state.showDepartmentAbove ? 'text-primary bg-primary/10' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
@@ -273,21 +384,25 @@ const App: React.FC = () => {
               <button onClick={() => handleZoom(-0.1)} className="p-2.5 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" title="Zoom Out">
                 <span className="material-symbols-outlined text-xl">remove</span>
               </button>
-              <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1"></div>
               <button onClick={() => setState(prev => ({ ...prev, zoom: 1 }))} className="p-2.5 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" title="Reset Zoom">
                 <span className="material-symbols-outlined text-xl">center_focus_strong</span>
               </button>
-              <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1"></div>
-              <button
-                onClick={() => { setInitialParentId(null); setIsOnboarding(true); }}
-                className="flex items-center justify-center p-2.5 bg-primary hover:bg-blue-600 text-white rounded-lg transition-colors"
-                title="Add New Node"
-              >
-                <span className="material-symbols-outlined text-xl">person_add</span>
-              </button>
+
+              {state.isEditMode && (
+                <>
+                  <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1"></div>
+                  <button
+                    onClick={() => { setInitialParentId(null); setIsOnboarding(true); }}
+                    className="flex items-center justify-center p-2.5 bg-primary hover:bg-blue-600 text-white rounded-lg transition-colors"
+                    title="Add New Node"
+                  >
+                    <span className="material-symbols-outlined text-xl">person_add</span>
+                  </button>
+                </>
+              )}
             </div>
-          </div>
-        </main>
+          </div >
+        </main >
 
         <Sidebar
           employee={state.employees.find(e => e.id === state.selectedEmployeeId) || null}
@@ -295,8 +410,9 @@ const App: React.FC = () => {
           onClose={() => setState(prev => ({ ...prev, selectedEmployeeId: null }))}
           onUpdate={handleUpdate}
           onDelete={handleDelete}
+          isEditMode={state.isEditMode}
         />
-      </div>
+      </div >
 
       {isOnboarding && (
         <OnboardingForm
@@ -306,7 +422,7 @@ const App: React.FC = () => {
           initialParentId={initialParentId}
         />
       )}
-    </div>
+    </div >
   );
 };
 
