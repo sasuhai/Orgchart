@@ -7,7 +7,7 @@ import { OnboardingForm } from './components/OnboardingForm';
 import { INITIAL_EMPLOYEES } from './constants';
 import { Employee, TreeState } from './types';
 
-const LOCAL_STORAGE_KEY = 'org-chart-data';
+const LOCAL_STORAGE_KEY = 'org-chart-data-v1';
 
 const App: React.FC = () => {
   const [state, setState] = useState<TreeState>(() => {
