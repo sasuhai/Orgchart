@@ -115,6 +115,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ employee, employees, onClose, 
               <option value="">(None)</option>
               {Object.values(Department).map(dept => <option key={dept} value={dept}>{dept}</option>)}
             </select>
+            <div className="flex items-center gap-2 mt-2">
+              <input
+                type="checkbox"
+                id="showDept"
+                disabled={!isEditMode}
+                checked={formData.showDepartment !== false}
+                onChange={(e) => setFormData({ ...formData, showDepartment: e.target.checked })}
+                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary focus:ring-2 cursor-pointer disabled:cursor-not-allowed"
+              />
+              <label htmlFor="showDept" className="text-xs font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                Display Department Label
+              </label>
+            </div>
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Reports To</label>

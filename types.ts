@@ -19,6 +19,7 @@ export interface Employee {
   roles: string[];
   description: string;
   email: string;
+  showDepartment?: boolean;
 }
 
 export interface TreeState {

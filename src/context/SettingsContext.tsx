@@ -8,25 +8,60 @@ interface D01Settings {
     textColor: string;
 }
 
+export type BackgroundTheme = 'grid' | 'gradient' | 'mesh' | 'dark' | 'clean';
+
+interface OrgChartSettings {
+    backgroundTheme: BackgroundTheme;
+}
+
 interface Settings {
     companyName: string;
     d01: D01Settings;
+    orgChart: OrgChartSettings;
 }
 
 interface SettingsContextType {
     settings: Settings;
     updateSettings: (newSettings: Partial<Settings>) => void;
     updateD01Settings: (newD01Settings: Partial<D01Settings>) => void;
+    updateOrgChartSettings: (newOrgChartSettings: Partial<OrgChartSettings>) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'orgchart-app-settings-v1';
+const LOCAL_STORAGE_KEY = 'orgchart-app-settings-v2';
+
+// Default values to merge with loaded data
+const DEFAULT_SETTINGS: Settings = {
+    companyName: "My Company",
+    d01: {
+        fontSize: 120,
+        fillOpacity: 0.1,
+        isGlass: true,
+        textColor: '#ffffff'
+    },
+    orgChart: {
+        backgroundTheme: 'grid'
+    }
+};
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [settings, setSettings] = useState<Settings>(() => {
+        // Since we removed data persistence from file, we rely on local storage for SETTINGS only?
+        // Or should we just stick to memory for now as per user instruction "remove local storage"?
+        // The user instructions were for App Data (employees). Settings might be different.
+        // But to be consistent with "remove 'org-chart-data-v1'", let's keep settings in local storage 
+        // OR just default (memory only) if preferred.
+        // Let's use LocalStorage for settings preference as it's UI state, not Business Data.
         const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-        return saved ? JSON.parse(saved) : appData.settings;
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            // Merge with defaults to ensure new fields exist
+            return { ...DEFAULT_SETTINGS, ...parsed, orgChart: { ...DEFAULT_SETTINGS.orgChart, ...parsed.orgChart } };
+        }
+        // Fallback to appData or Defaults
+        // @ts-ignore
+        return { ...DEFAULT_SETTINGS, ...appData.settings };
     });
 
     useEffect(() => {
@@ -44,8 +79,15 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }));
     };
 
+    const updateOrgChartSettings = (newOrgChartSettings: Partial<OrgChartSettings>) => {
+        setSettings(prev => ({
+            ...prev,
+            orgChart: { ...prev.orgChart, ...newOrgChartSettings }
+        }));
+    };
+
     return (
-        <SettingsContext.Provider value={{ settings, updateSettings, updateD01Settings }}>
+        <SettingsContext.Provider value={{ settings, updateSettings, updateD01Settings, updateOrgChartSettings }}>
             {children}
         </SettingsContext.Provider>
     );

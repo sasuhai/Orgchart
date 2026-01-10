@@ -86,7 +86,7 @@ export const OrgChartNode: React.FC<OrgChartNodeProps> = ({
     }
   };
 
-  const hasDepartment = employee.department && employee.department.trim() !== '';
+  const shouldShow = (employee.showDepartment !== false) && (employee.department && employee.department.trim() !== '');
 
   // Helper for conditional border styles
   const getDragStyle = () => {
@@ -101,7 +101,7 @@ export const OrgChartNode: React.FC<OrgChartNodeProps> = ({
   return (
     <div className="flex flex-col items-center group">
       {/* Department Card (Above) */}
-      {showDepartmentAbove && hasDepartment && (
+      {showDepartmentAbove && shouldShow && (
         <>
           <div className={`
             px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm mb-1 z-10
@@ -139,7 +139,7 @@ export const OrgChartNode: React.FC<OrgChartNodeProps> = ({
           <p className="text-gray-600 dark:text-gray-300 text-xs font-medium truncate">{employee.title}</p>
 
           {/* Department rendered inside if NOT showing above */}
-          {(!showDepartmentAbove || !hasDepartment) && (
+          {(!showDepartmentAbove && shouldShow) && (
             <span className={`inline-flex items-center px-2 py-0.5 mt-1 rounded text-[10px] font-medium w-fit self-center ${getDeptColor(employee.department)}`}>
               {employee.department}
             </span>

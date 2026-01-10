@@ -1,3 +1,6 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* Tree connector lines (base color) */
 :root {
@@ -16,7 +19,7 @@
 .tree-container {
   display: flex;
   justify-content: center;
-  padding-top: 20px;
+  padding-top: 0;
   position: relative;
 }
 
@@ -25,112 +28,48 @@
   text-align: center;
   list-style-type: none;
   position: relative;
-  padding: 20px 10px 0 10px; /* spacing between nodes */
+  padding: 20px 10px 0 10px;
 }
 
 /* Line connectors logic */
-
-/* The vertical line going up from the node to the horizontal connector */
-.tree-node-wrapper::before, .tree-node-wrapper::after {
+.tree-node-wrapper::before,
+.tree-node-wrapper::after {
   content: '';
-  position: absolute; 
-  top: 0; 
+  position: absolute;
+  top: 0;
   right: 50%;
   border-top: 2px solid var(--line-color);
-  width: 50%; 
+  width: 50%;
   height: 20px;
 }
 
 .tree-node-wrapper::after {
-  right: auto; 
+  right: auto;
   left: 50%;
   border-left: 2px solid var(--line-color);
 }
 
-/* Remove left connector from first child and right from last child */
-.tree-node-wrapper:only-child::after, .tree-node-wrapper:only-child::before {
+.tree-node-wrapper:only-child::after,
+.tree-node-wrapper:only-child::before {
   display: none;
 }
 
-.tree-node-wrapper:only-child { 
-  padding-top: 0;
-}
-
-.tree-node-wrapper:first-child::before {
-  border: 0 none;
-}
-
-.tree-node-wrapper:last-child::after {
-  border: 0 none;
-  border-left: 2px solid var(--line-color); /* We still need the vertical line part though? */
-}
-
-/* Wait, the "standard" css method usually does:
-   ::before is the horizontal line above.
-   ::after is the vertical line connecting that horizontal line to the node below.
-*/
-
-/* Let's redo to be safer and clearer */
-
-.tree-node-wrapper::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 50%;
-  height: 20px; /* distance from top siblings bar to node */
-  border-right: 2px solid var(--line-color); /* The vertical line part is implied by where boundaries meet? No. */
-  border-top: 2px solid var(--line-color);
-}
-
-.tree-node-wrapper::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 50%;
-  height: 20px;
-  border-top: 2px solid var(--line-color);
-  border-left: 2px solid var(--line-color); /* Only one needs the vertical border really? */
-}
-
-/* We need a vertical line down from the PARENT to the SIBLINGS. 
-   That is handled by the parent component, usually. 
-   Here, OrgChartTree renders the siblings. The Parent Node is rendered one level up.
-*/
-
-/* Correct Logic: */
-.tree-node-wrapper::before, .tree-node-wrapper::after {
-  content: '';
-  position: absolute; top: 0; right: 50%;
-  border-top: 2px solid var(--line-color);
-  width: 50%; height: 20px;
-}
-.tree-node-wrapper::after {
-  right: auto; left: 50%;
-  border-left: 2px solid var(--line-color);
-}
-
-/* Hide line for single child (handled by parent vertical line) or fix corners */
-.tree-node-wrapper:only-child::after, .tree-node-wrapper:only-child::before {
-  display: none;
-}
 .tree-node-wrapper:only-child {
   padding-top: 0;
 }
 
-/* First child: remove left horizontal line */
 .tree-node-wrapper:first-child::before {
   border: 0 none;
 }
+
 .tree-node-wrapper:first-child::after {
   border-radius: 5px 0 0 0;
 }
 
-/* Last child: remove right horizontal line */
 .tree-node-wrapper:last-child::after {
   border: 0 none;
 }
+
 .tree-node-wrapper:last-child::before {
   border-right: 2px solid var(--line-color);
   border-radius: 0 5px 0 0;
@@ -167,4 +106,137 @@
   height: 20px;
   background: var(--line-color);
   margin: 0 auto;
+}
+
+/* === BACKGROUND THEMES === */
+
+/* 1. Grid (Default) */
+.bg-theme-grid {
+  background-color: #f8fafc;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.dark .bg-theme-grid {
+  background-color: #0f172a;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+}
+
+/* 2. Executive Gradient */
+.bg-theme-gradient {
+  background: radial-gradient(circle at 50% 0%, #e2e8f0 0%, #f8fafc 100%);
+}
+
+.dark .bg-theme-gradient {
+  background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
+}
+
+/* 3. Modern Mesh */
+.bg-theme-mesh {
+  background-color: #ffffff;
+  background-image:
+    radial-gradient(at 40% 20%, hsla(28, 100%, 74%, 0.2) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, hsla(189, 100%, 56%, 0.2) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, hsla(340, 100%, 76%, 0.2) 0px, transparent 50%);
+  background-size: 200% 200%;
+  animation: gradient-animation 15s ease infinite;
+}
+
+.dark .bg-theme-mesh {
+  background-color: #0f172a;
+  background-image:
+    radial-gradient(at 40% 20%, hsla(266, 52%, 26%, 0.4) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, hsla(224, 62%, 24%, 0.4) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, hsla(267, 56%, 27%, 0.4) 0px, transparent 50%);
+}
+
+
+/* 4. Tech Dark (Blueprint) */
+.bg-theme-dark {
+  background-color: #1e3a8a;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.dark .bg-theme-dark {
+  background-color: #0B1120;
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.1) 1px, transparent 1px);
+}
+
+
+/* 5. Clean Canvas */
+.bg-theme-clean {
+  background-color: #fdfbf7;
+  background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%239C92AC' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M5 0h1v1H5V0zM0 5h1v1H0V5z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.dark .bg-theme-clean {
+  background-color: #1c1c1c;
+  background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M5 0h1v1H5V0zM0 5h1v1H0V5z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+@keyframes gradient-animation {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Search Highlight Animation */
+@keyframes highlight-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    border-color: #22c55e;
+  }
+
+  70% {
+    box-shadow: 0 0 0 12px rgba(34, 197, 94, 0);
+    border-color: #22c55e;
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    border-color: #22c55e;
+  }
+}
+
+.found-card {
+  animation: highlight-pulse 2s infinite;
+  border-width: 3px !important;
+  border-color: #22c55e !important;
+  z-index: 50 !important;
+}
+
+/* Drag Visuals */
+.drag-target-inside {
+  border: 4px dashed #22c55e !important;
+  background-color: rgba(34, 197, 94, 0.25) !important;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2) !important;
+}
+
+.drag-target-before {
+  border-style: dashed !important;
+  border-color: transparent !important;
+  border-left: 4px dashed #3b82f6 !important;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.2), transparent) !important;
+}
+
+.drag-target-after {
+  border-style: dashed !important;
+  border-color: transparent !important;
+  border-right: 4px dashed #3b82f6 !important;
+  background: linear-gradient(-90deg, rgba(59, 130, 246, 0.2), transparent) !important;
 }

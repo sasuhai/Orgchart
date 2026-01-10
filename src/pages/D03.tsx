@@ -54,6 +54,7 @@ export const D03: React.FC<D03Props> = ({ employees, focusedEmployeeId }) => {
     const animationFrameRef = useRef<number | null>(null);
     const featuredIdRef = useRef<string | null>(null);
     const isTransitioningRef = useRef(false);
+    const isHoveringRef = useRef(false);
 
     // NEW: Ref to track latest visible items to avoid stale closures in animation loop
     const visibleItemsRef = useRef<Employee[]>([]);
@@ -126,7 +127,7 @@ export const D03: React.FC<D03Props> = ({ employees, focusedEmployeeId }) => {
 
         const animate = () => {
             // Update rotation
-            if (!focusedEmployeeId || manualResume) {
+            if ((!focusedEmployeeId || manualResume) && !isHoveringRef.current) {
                 rotationRef.current += ROTATION_SPEED;
             }
             const currentRotation = rotationRef.current; // Global offset in degrees
@@ -332,6 +333,8 @@ export const D03: React.FC<D03Props> = ({ employees, focusedEmployeeId }) => {
                 <div
                     className="absolute right-[5%] md:right-[10%] top-1/2 -translate-y-1/2 w-48 md:w-56 bg-black/60 backdrop-blur-md border border-white/10 rounded-2xl p-4 text-white z-50 shadow-[0_0_30px_rgba(0,0,0,0.5)] animate-in fade-in duration-700 cursor-pointer"
                     onClick={() => setManualResume(true)}
+                    onMouseEnter={() => isHoveringRef.current = true}
+                    onMouseLeave={() => isHoveringRef.current = false}
                 >
                     <div
                         className="transition-opacity duration-300 ease-in-out"
@@ -348,9 +351,20 @@ export const D03: React.FC<D03Props> = ({ employees, focusedEmployeeId }) => {
                         <h3 className="font-bold text-xl leading-tight mb-1 text-white tracking-tight">{activePerson.name}</h3>
                         <p className="text-xs font-semibold text-blue-400 uppercase tracking-widest mb-1">{activePerson.title || 'Team Member'}</p>
                         <p className="text-[10px] text-gray-400 font-medium">{activePerson.department || 'General'}</p>
+
+                        {activePerson.description && (
+                            <div className="absolute top-full left-0 w-full mt-2 px-4">
+                                <p className="text-[10px] text-gray-400 font-medium leading-relaxed text-left">
+                                    {activePerson.description}
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
+
+            {/* Description outside container - Right Side Below Card */}
+
 
             {/* Orbit Container */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

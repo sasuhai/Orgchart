@@ -99,6 +99,10 @@ export const D02: React.FC<D02Props> = ({ employees, focusedEmployeeId }) => {
                 </div>
             </div>
 
+            {/* Gradient Overlays */}
+            <div className="absolute top-0 bottom-0 left-0 w-[10vw] bg-gradient-to-r from-[#FF5F1F] to-transparent z-20 pointer-events-none"></div>
+            <div className="absolute top-0 bottom-0 right-0 w-[10vw] bg-gradient-to-l from-[#FF5F1F] to-transparent z-20 pointer-events-none"></div>
+
             <style>{`
         .transform-style-3d {
           transform-style: preserve-3d;
@@ -111,7 +115,7 @@ export const D02: React.FC<D02Props> = ({ employees, focusedEmployeeId }) => {
           to { transform: rotateY(-360deg); }
         }
         .animate-spin-slow {
-          animation: spin-slow 120s linear infinite;
+          animation: spin-slow 80s linear infinite;
         }
         .animate-spin-slow:hover {
             animation-play-state: paused;

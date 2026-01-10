@@ -7,27 +7,13 @@ import { D02 } from './src/pages/D02';
 import { D03 } from './src/pages/D03';
 import { D04 } from './src/pages/D04';
 import { D05 } from './src/pages/D05';
+import { D06 } from './src/pages/D06';
 import { INITIAL_EMPLOYEES } from './constants';
 import { Employee } from './types';
 import { useSettings } from './src/context/SettingsContext';
 
 // Helper to force redirect to home on initial load/refresh if desired
-const RedirectToHome = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const hasRedirected = useRef(false);
 
-  useEffect(() => {
-    // Only redirect if we are not at root and we haven't redirected yet in this session logic
-    // Actually, on refresh, hasRedirected is false.
-    if (!hasRedirected.current && location.pathname !== '/') {
-      hasRedirected.current = true;
-      navigate('/', { replace: true });
-    }
-  }, [navigate, location]);
-
-  return null;
-};
 
 const App: React.FC = () => {
   // Always load from static JSON on initial load
@@ -192,7 +178,7 @@ const App: React.FC = () => {
       // @ts-ignore - File System Access API
       const handle = await window.showSaveFilePicker({
         types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }],
-        suggestedName: 'orgchart_data.json'
+        suggestedName: 'app_data.json'
       });
 
       const exportData = {
@@ -224,7 +210,7 @@ const App: React.FC = () => {
 
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <RedirectToHome />
+
       <div className="flex flex-col h-screen overflow-hidden">
         <Header
           searchQuery={searchQuery}
@@ -253,6 +239,7 @@ const App: React.FC = () => {
           <Route path="/d03" element={<D03 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
           <Route path="/d04" element={<D04 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
           <Route path="/d05" element={<D05 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
+          <Route path="/d06" element={<D06 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
         </Routes>
       </div>
     </BrowserRouter>

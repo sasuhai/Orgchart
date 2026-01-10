@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSettings } from '../src/context/SettingsContext';
@@ -84,42 +85,33 @@ export const Header: React.FC<HeaderProps> = ({
     setIsEditing(true);
   };
 
-  const getLinkClasses = (path: string) => {
-    // Exact match for root, startsWith for others to handle potential sub-routes if any
-    const isActive = path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
-
-    return `px-4 py-1.5 text-sm font-medium rounded-md transition-all ${isActive
-      ? 'bg-white dark:bg-gray-700 shadow-sm text-primary dark:text-white font-bold'
-      : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200'
-      }`;
-  };
-
   return (
-    <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-[#f0f2f4] dark:border-[#1f2937] bg-white dark:bg-[#111827] px-8 py-3 shrink-0 z-30">
+    <header className="sticky top-0 flex items-center justify-between whitespace-nowrap border-b border-gray-200/50 dark:border-gray-800/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl px-6 py-3 shrink-0 z-50 shadow-sm transition-all text-slate-900 dark:text-white">
       <div className="flex items-center gap-8">
+        {/* Brand / Logo Section */}
         <div className="flex items-center gap-6">
-          <Link to="/" className="flex items-center gap-4 text-[#111418] dark:text-white hover:opacity-80 transition-opacity group">
-            <div className="size-8 text-primary flex items-center justify-center">
-              <span className="material-symbols-outlined text-3xl">account_tree</span>
+          <Link to="/" className="flex items-center gap-3 text-slate-800 dark:text-white hover:opacity-80 transition-opacity group">
+            <div className="size-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <span className="material-symbols-outlined text-[20px]">account_tree</span>
             </div>
             {isEditing ? (
               <input
                 autoFocus
-                className="text-lg font-bold leading-tight tracking-[-0.015em] bg-transparent border-b border-primary text-[#111418] dark:text-white focus:outline-none min-w-[150px]"
+                className="text-lg font-bold leading-tight bg-transparent border-b-2 border-primary text-slate-900 dark:text-white focus:outline-none min-w-[180px] py-0.5"
                 value={tempName}
                 onChange={(e) => setTempName(e.target.value)}
                 onBlur={handleSaveName}
                 onKeyDown={handleKeyDown}
-                onClick={(e) => e.preventDefault()} // Prevent Link nav
+                onClick={(e) => e.preventDefault()}
               />
             ) : (
-              <div className="flex items-center gap-2">
-                <h2 className="text-[#111418] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">
+              <div className="flex items-center gap-2 group/edit">
+                <h2 className="text-slate-900 dark:text-white text-lg font-bold tracking-tight">
                   {settings.companyName}
                 </h2>
                 <button
                   onClick={startEditing}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-gray-400 hover:text-primary"
+                  className="opacity-0 group-hover/edit:opacity-100 transition-all p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-primary scale-90 hover:scale-100"
                   title="Edit Company Name"
                 >
                   <span className="material-symbols-outlined text-sm">edit</span>
@@ -128,90 +120,118 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </Link>
 
-          <nav className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-            <Link to="/" className={getLinkClasses('/')}>
-              Chart
-            </Link>
-            <Link to="/d01" className={getLinkClasses('/d01')}>
-              D01
-            </Link>
-            <Link to="/d02" className={getLinkClasses('/d02')}>
-              D02
-            </Link>
-            <Link to="/d03" className={getLinkClasses('/d03')}>
-              D03
-            </Link>
-            <Link to="/d04" className={getLinkClasses('/d04')}>
-              D04
-            </Link>
-            <Link to="/d05" className={getLinkClasses('/d05')}>
-              D05
-            </Link>
+          {/* Navigation - Segmented Pill */}
+          <nav className="hidden lg:flex items-center bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+            {['/', '/d01', '/d02', '/d03', '/d04', '/d05', '/d06'].map((path) => (
+              <Link
+                key={path}
+                to={path}
+                className={`
+                  px-4 py-1.5 text-sm font-medium rounded-lg transition-all duration-200
+                  ${(path === '/' ? location.pathname === '/' : location.pathname.startsWith(path))
+                    ? 'bg-white dark:bg-slate-900 shadow-sm text-blue-600 dark:text-blue-400 font-semibold ring-1 ring-black/5 dark:ring-white/5'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50'}
+                `}
+              >
+                {path === '/' ? 'Chart' : path.substring(1).toUpperCase()}
+              </Link>
+            ))}
           </nav>
         </div>
 
-        <label ref={searchContainerRef} className="hidden md:flex flex-col min-w-40 !h-10 max-w-64 relative">
-          <div className="flex w-full flex-1 items-stretch rounded-lg h-full">
-            <div className="text-[#617289] dark:text-gray-400 flex border-none bg-[#f0f2f4] dark:bg-[#1f2937] items-center justify-center pl-4 rounded-l-lg border-r-0">
-              <span className="material-symbols-outlined text-[20px]">search</span>
+        {/* Global Search */}
+        <div ref={searchContainerRef} className="hidden md:block relative max-w-md w-full min-w-[300px]">
+          <div className="relative group input-wrapper">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span className="material-symbols-outlined text-slate-400 group-focus-within:text-primary transition-colors text-[20px]">search</span>
             </div>
             <input
-              className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#111418] dark:text-white focus:outline-0 focus:ring-0 border-none bg-[#f0f2f4] dark:bg-[#1f2937] focus:border-none h-full placeholder:text-[#617289] px-4 rounded-l-none border-l-0 pl-2 text-sm font-normal leading-normal"
-              placeholder="Find employee..."
+              className="
+                w-full pl-10 pr-4 py-2 bg-slate-100/50 dark:bg-slate-800/50 
+                border border-transparent group-hover:border-slate-200 dark:group-hover:border-slate-700
+                focus:bg-white dark:focus:bg-slate-900 focus:border-primary/50 focus:ring-4 focus:ring-primary/10
+                rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-500
+                transition-all duration-200 outline-none
+              "
+              placeholder="Search employees, roles..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
             />
-            {showDropdown && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50">
-                {filteredEmployees.map(emp => (
-                  <button
-                    key={emp.id}
-                    onClick={() => handleSelectResult(emp.id)}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-50 dark:border-gray-700 last:border-0 transition-colors flex items-center gap-3"
-                  >
-                    <img src={emp.imageUrl} alt={emp.name} className="w-8 h-8 rounded-full object-cover" />
-                    <div>
-                      <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{emp.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{emp.title}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
-        </label>
+
+          {/* Search Dropdown */}
+          {showDropdown && (
+            <div className="absolute top-full left-0 right-0 mt-3 p-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-black/50 border border-slate-200/60 dark:border-slate-800 z-50 animate-in fade-in zoom-in-95 duration-200">
+              <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                {filteredEmployees.length > 0 ? 'Results' : 'No results found'}
+              </div>
+              {filteredEmployees.map(emp => (
+                <button
+                  key={emp.id}
+                  onClick={() => handleSelectResult(emp.id)}
+                  className="w-full text-left p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors flex items-center gap-3 group"
+                >
+                  <img src={emp.imageUrl} alt={emp.name} className="size-9 rounded-full object-cover ring-2 ring-transparent group-hover:ring-primary/30 transition-all" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-primary transition-colors">{emp.name}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{emp.title}</p>
+                  </div>
+                  <span className="ml-auto material-symbols-outlined text-slate-300 group-hover:text-primary text-lg opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all">
+                    arrow_forward
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-      <div className="flex flex-1 justify-end gap-6 items-center">
-        <div className="flex items-center gap-2">
+
+      {/* Right Actions */}
+      <div className="flex items-center gap-4">
+        {/* Status Indicators */}
+        <div className="flex items-center gap-3 px-3">
           {saveStatus === 'unsaved' && (
-            <span className="text-amber-600 dark:text-amber-400 text-xs font-medium mr-2 flex items-center gap-1">
-              <span className="material-symbols-outlined text-sm">warning</span>
-              Unsaved to File
-            </span>
+            <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-full border border-amber-100 dark:border-amber-800">
+              <span className="material-symbols-outlined text-base">warning</span>
+              <span className="text-xs font-semibold">Unsaved</span>
+            </div>
           )}
           {saveStatus === 'saving' && (
-            <span className="text-blue-600 dark:text-blue-400 text-xs font-medium mr-2 flex items-center gap-1">
-              <span className="material-symbols-outlined text-sm animate-spin">sync</span>
-              Saving...
-            </span>
+            <div className="flex items-center gap-1.5 text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-full border border-blue-100 dark:border-blue-800">
+              <span className="material-symbols-outlined text-base animate-spin">sync</span>
+              <span className="text-xs font-semibold">Saving...</span>
+            </div>
           )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
           <button
             onClick={onImport}
-            className="flex items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-[#f0f2f4] dark:bg-[#1f2937] hover:bg-gray-200 dark:hover:bg-gray-700 text-[#111418] dark:text-gray-200 text-sm font-bold leading-normal tracking-[0.015em] transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl transition-all hover:shadow-sm"
           >
-            <span className="truncate">Import</span>
+            <span className="material-symbols-outlined text-[18px]">upload_file</span>
+            Import
           </button>
           <button
             onClick={onExport}
-            className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-primary hover:bg-blue-600 text-white text-sm font-bold leading-normal tracking-[0.015em] transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-white bg-slate-900 dark:bg-primary hover:bg-slate-800 dark:hover:bg-blue-600 rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
           >
-            <span className="truncate">Export</span>
+            <span className="material-symbols-outlined text-[18px]">download</span>
+            Export
           </button>
         </div>
-        <div
-          className="bg-center bg-no-repeat bg-cover rounded-full size-9 border-2 border-white dark:border-gray-700 shadow-sm cursor-pointer"
-          style={{ backgroundImage: 'url("https://picsum.photos/100/100?random=1")' }}
-        ></div>
+
+        {/* Profile */}
+        <div className="relative group cursor-pointer pl-2">
+          <div className="size-10 rounded-full bg-slate-200 p-0.5 ring-2 ring-transparent group-hover:ring-primary/50 transition-all">
+            <div
+              className="w-full h-full bg-center bg-no-repeat bg-cover rounded-full"
+              style={{ backgroundImage: 'url("https://picsum.photos/100/100?random=1")' }}
+            ></div>
+          </div>
+          <div className="absolute top-1 right-0 size-3 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full"></div>
+        </div>
       </div>
     </header>
   );

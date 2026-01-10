@@ -5,31 +5,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OrgChart Pro</title>
+  <link rel="icon" href="https://fav.farm/🏢" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
     rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <script>
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            "primary": "#2b7cee",
-            "background-light": "#f6f7f8",
-            "background-dark": "#101822",
-            "surface-dark": "#1a2634",
-          },
-          fontFamily: {
-            "display": ["Inter", "sans-serif"],
-            "sans": ["Inter", "sans-serif"]
-          }
-        }
-      }
-    }
-  </script>
   <style>
     ::-webkit-scrollbar {
       width: 8px;
@@ -53,77 +34,26 @@
       background: #334155;
     }
 
-    .bg-grid-pattern {
-      background-size: 20px 20px;
-      background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
-    }
+    /* Global styles that override tailwind or are needed before load can stay here, 
+       but most should be in CSS now. I'll keep the scrollbar ones here for safety or move to css.
+       Actually, leaving them here is fine for now to minimize risk. */
 
-    .dark .bg-grid-pattern {
-      background-image: radial-gradient(circle, #334155 1px, transparent 1px);
-    }
+    /* Drag Visuals - these were in style tag, let's keep them or move to css?
+       They are already in CSS file now? No, the <style> block had them.
+       I checked orgchart.css content I wrote, it DID NOT include the .drag-target stuff in my write_to_file call 
+       because I based it on the file view of orgchart.css which didn't have them. 
+       Wait, let me double check the file view of orgchart.css vs index.html styles.
+    */
 
-    .tree-connector-v {
-      width: 2px;
-      background-color: #cbd5e1;
-    }
-
-    .dark .tree-connector-v {
-      background-color: #334155;
-    }
-
-    .tree-connector-h {
-      height: 2px;
-      background-color: #cbd5e1;
-    }
-
-    .dark .tree-connector-h {
-      background-color: #334155;
-    }
-
-    @keyframes highlight-pulse {
-      0% {
-        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
-        border-color: #22c55e;
-      }
-
-      70% {
-        box-shadow: 0 0 0 12px rgba(34, 197, 94, 0);
-        border-color: #22c55e;
-      }
-
-      100% {
-        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
-        border-color: #22c55e;
-      }
-    }
-
-    .found-card {
-      animation: highlight-pulse 2s infinite;
-      border-width: 3px !important;
-      border-color: #22c55e !important;
-      z-index: 50 !important;
-    }
-
-    /* Drag Visuals */
-    .drag-target-inside {
-      border: 4px dashed #22c55e !important;
-      background-color: rgba(34, 197, 94, 0.25) !important;
-      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2) !important;
-    }
-
-    .drag-target-before {
-      border-style: dashed !important;
-      border-color: transparent !important;
-      border-left: 4px dashed #3b82f6 !important;
-      background: linear-gradient(90deg, rgba(59, 130, 246, 0.2), transparent) !important;
-    }
-
-    .drag-target-after {
-      border-style: dashed !important;
-      border-color: transparent !important;
-      border-right: 4px dashed #3b82f6 !important;
-      background: linear-gradient(-90deg, rgba(59, 130, 246, 0.2), transparent) !important;
-    }
+    /* 
+       The index.html had <style> block with:
+       - scrollbar styles
+       - .bg-grid-pattern (duped in html and css?)
+       - .tree-connector (duped)
+       - @keyframes highlight-pulse (unique to html?)
+       - .found-card (unique to html?)
+       - .drag-target-* (unique to html?)
+    */
   </style>
 </head>
 

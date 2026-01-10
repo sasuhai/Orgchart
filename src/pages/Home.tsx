@@ -4,6 +4,7 @@ import { OrgChartTree } from '../../components/OrgChartTree';
 import { Sidebar } from '../../components/Sidebar';
 import { OnboardingForm } from '../../components/OnboardingForm';
 import { Employee } from '../../types';
+import { useSettings, BackgroundTheme } from '../../src/context/SettingsContext';
 
 interface HomeProps {
     employees: Employee[];
@@ -24,15 +25,16 @@ export const Home: React.FC<HomeProps> = ({
     onMoveNode,
     focusedEmployeeId
 }) => {
+    const { settings, updateOrgChartSettings } = useSettings();
+    // Default to 'grid' if undefined (though provider sets default)
+    const currentTheme = settings.orgChart?.backgroundTheme || 'grid';
+
     const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
     const [zoom, setZoom] = useState(1);
-    const [showDepartmentAbove, setShowDepartmentAbove] = useState(false);
-    // Initialize expandedIds with all IDs on first load or prop?
-    // Since Home remounts on route change, we might lose expanded state.
-    // Ideally this should be lifted, but for now let's keep it here.
+    const [showDepartmentAbove, setShowDepartmentAbove] = useState(true);
     const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set(employees.map(e => e.id)));
     const [showPhotos, setShowPhotos] = useState(true);
-    const [isEditMode, setIsEditMode] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(true);
     const [isOnboarding, setIsOnboarding] = useState(false);
     const [initialParentId, setInitialParentId] = useState<string | null>(null);
 
@@ -69,7 +71,8 @@ export const Home: React.FC<HomeProps> = ({
             parentId: data.parentId || null,
             roles: [],
             description: data.description || '',
-            email: data.email || ''
+            email: data.email || '',
+            showDepartment: true
         };
         onAddEmployee(newEmployee);
         setExpandedIds(prev => new Set([...prev, newEmployee.id]));
@@ -96,6 +99,25 @@ export const Home: React.FC<HomeProps> = ({
             else next.add(id);
             return next;
         });
+    };
+
+    // Background Theme Logic
+    const getBackgroundClass = (theme: BackgroundTheme) => {
+        switch (theme) {
+            case 'grid': return 'bg-theme-grid';
+            case 'gradient': return 'bg-theme-gradient';
+            case 'mesh': return 'bg-theme-mesh';
+            case 'dark': return 'bg-theme-dark';
+            case 'clean': return 'bg-theme-clean';
+            default: return 'bg-theme-grid';
+        }
+    };
+
+    const handleCycleTheme = () => {
+        const themes: BackgroundTheme[] = ['grid', 'gradient', 'mesh', 'dark', 'clean'];
+        const currentIndex = themes.indexOf(currentTheme);
+        const nextIndex = (currentIndex + 1) % themes.length;
+        updateOrgChartSettings({ backgroundTheme: themes[nextIndex] });
     };
 
     const containerRef = useRef<HTMLDivElement>(null);
@@ -141,7 +163,7 @@ export const Home: React.FC<HomeProps> = ({
         <div className="flex flex-1 overflow-hidden relative h-[calc(100vh-64px)]">
             <main
                 ref={containerRef}
-                className={`flex-1 relative overflow-auto bg-background-light dark:bg-background-dark bg-grid-pattern ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                className={`flex-1 relative overflow-auto ${getBackgroundClass(currentTheme)} ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
@@ -172,6 +194,7 @@ export const Home: React.FC<HomeProps> = ({
                 <div className="absolute top-8 right-8 z-40">
                     <div className="flex items-center gap-1 p-2 bg-white/90 dark:bg-[#1e293b]/90 backdrop-blur-md rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 dark:border-gray-700">
 
+                        {/* Edit Mode Toggle */}
                         <button
                             onClick={() => setIsEditMode(!isEditMode)}
                             className={`p-2.5 rounded-lg transition-colors ${isEditMode
@@ -181,6 +204,19 @@ export const Home: React.FC<HomeProps> = ({
                             title={isEditMode ? "Switch to View Only" : "Switch to Edit Mode"}
                         >
                             <span className="material-symbols-outlined text-xl">{isEditMode ? 'edit' : 'visibility'}</span>
+                        </button>
+
+                        <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1"></div>
+
+                        {/* Background Theme Cycle */}
+                        <button
+                            onClick={handleCycleTheme}
+                            className="p-2.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative group"
+                            title={`Change Background (Current: ${currentTheme})`}
+                        >
+                            <span className="material-symbols-outlined text-xl">wallpaper</span>
+                            {/* Optional: Small indicator of current theme */}
+                            <span className="absolute bottom-1 right-1 w-2 h-2 rounded-full bg-primary opacity-60"></span>
                         </button>
 
                         <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1"></div>
