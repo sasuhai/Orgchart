@@ -11,8 +11,6 @@ import { INITIAL_EMPLOYEES } from './constants';
 import { Employee } from './types';
 import { useSettings } from './src/context/SettingsContext';
 
-const LOCAL_STORAGE_KEY = 'org-chart-data-v1';
-
 // Helper to force redirect to home on initial load/refresh if desired
 const RedirectToHome = () => {
   const navigate = useNavigate();
@@ -32,10 +30,8 @@ const RedirectToHome = () => {
 };
 
 const App: React.FC = () => {
-  const [employees, setEmployees] = useState<Employee[]>(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return saved ? JSON.parse(saved) : INITIAL_EMPLOYEES;
-  });
+  // Always load from static JSON on initial load
+  const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
@@ -43,11 +39,7 @@ const App: React.FC = () => {
 
   const lastSavedEmployees = useRef(employees);
 
-  useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(employees));
-  }, [employees]);
-
-  // Autosave or update status on changes
+  // Autosave ONLY if a file handle is active (user explicitly imported/exported)
   useEffect(() => {
     // Skip if data hasn't changed (reference check works because we use immutable updates)
     if (employees === lastSavedEmployees.current) {
