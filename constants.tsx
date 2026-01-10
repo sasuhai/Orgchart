@@ -1,6 +1,5 @@
 
-import { Department, Employee } from './types';
+import { Employee } from './types';
+import appData from './data/app_data.json';
 
-import orgChartData from './data/orgchart_data.json';
-
-export const INITIAL_EMPLOYEES: Employee[] = orgChartData as unknown as Employee[];
+export const INITIAL_EMPLOYEES: Employee[] = appData.employees as unknown as Employee[];

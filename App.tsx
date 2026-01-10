@@ -1,14 +1,35 @@
-
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Home } from './src/pages/Home';
 import { D01 } from './src/pages/D01';
 import { D02 } from './src/pages/D02';
+import { D03 } from './src/pages/D03';
+import { D04 } from './src/pages/D04';
+import { D05 } from './src/pages/D05';
 import { INITIAL_EMPLOYEES } from './constants';
 import { Employee } from './types';
+import { useSettings } from './src/context/SettingsContext';
 
 const LOCAL_STORAGE_KEY = 'org-chart-data-v1';
+
+// Helper to force redirect to home on initial load/refresh if desired
+const RedirectToHome = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const hasRedirected = useRef(false);
+
+  useEffect(() => {
+    // Only redirect if we are not at root and we haven't redirected yet in this session logic
+    // Actually, on refresh, hasRedirected is false.
+    if (!hasRedirected.current && location.pathname !== '/') {
+      hasRedirected.current = true;
+      navigate('/', { replace: true });
+    }
+  }, [navigate, location]);
+
+  return null;
+};
 
 const App: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>(() => {
@@ -133,6 +154,8 @@ const App: React.FC = () => {
     });
   }, []);
 
+  const { settings, updateSettings, updateD01Settings } = useSettings();
+
   const handleImport = useCallback(async () => {
     if (!window.confirm("Importing data will overwrite existing data. Continue?")) return;
     try {
@@ -145,10 +168,22 @@ const App: React.FC = () => {
       const data = JSON.parse(text);
 
       if (Array.isArray(data)) {
-        // Sync ref to prevent autosave effect from firing immediately
+        // Legacy support: file is just an array of employees
         lastSavedEmployees.current = data;
-
         setEmployees(data);
+        setFileHandle(handle);
+        setSaveStatus('saved');
+      } else if (data.employees && data.settings) {
+        // New format: object with employees and settings
+        lastSavedEmployees.current = data.employees;
+        setEmployees(data.employees);
+
+        // Update settings
+        updateSettings(data.settings);
+        // Note: updateSettings in context merges, but here we probably want to replace or merge deeply.
+        // Actually, our updateSettings implements shallow merge. Let's rely on that or reset logic if needed.
+        // For simplicity, we assume data.settings matches the shape.
+
         setFileHandle(handle);
         setSaveStatus('saved');
       } else {
@@ -157,7 +192,7 @@ const App: React.FC = () => {
     } catch (err) {
       console.error(err);
     }
-  }, []);
+  }, [updateSettings]);
 
   const handleExport = useCallback(async (shouldConfirm = true) => {
     if (shouldConfirm && !window.confirm("Export data to a new file?")) return;
@@ -167,8 +202,14 @@ const App: React.FC = () => {
         types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }],
         suggestedName: 'orgchart_data.json'
       });
+
+      const exportData = {
+        employees,
+        settings
+      };
+
       const writable = await handle.createWritable();
-      await writable.write(JSON.stringify(employees, null, 2));
+      await writable.write(JSON.stringify(exportData, null, 2));
       await writable.close();
       setFileHandle(handle);
       setSaveStatus('saved');
@@ -177,10 +218,21 @@ const App: React.FC = () => {
     } catch (err) {
       console.error(err);
     }
-  }, [employees]);
+  }, [employees, settings]);
+
+  const [focusedEmployeeId, setFocusedEmployeeId] = useState<string | null>(null);
+
+  const handleSearchSelect = useCallback((id: string) => {
+    setFocusedEmployeeId(id);
+    // Optional: Reset after a delay if needed by pages to re-trigger, 
+    // but usually purely reactive is fine.
+    // However, if searching same person twice, we might want to re-trigger.
+    // For now simple state set is fine.
+  }, []);
 
   return (
     <BrowserRouter>
+      <RedirectToHome />
       <div className="flex flex-col h-screen overflow-hidden">
         <Header
           searchQuery={searchQuery}
@@ -188,6 +240,8 @@ const App: React.FC = () => {
           onExport={() => handleExport(true)}
           onImport={handleImport}
           saveStatus={saveStatus}
+          employees={employees}
+          onSelectEmployee={handleSearchSelect}
         />
 
         <Routes>
@@ -199,10 +253,14 @@ const App: React.FC = () => {
               onDelete={handleDelete}
               onAddEmployee={handleAddEmployee}
               onMoveNode={handleMoveNode}
+              focusedEmployeeId={focusedEmployeeId}
             />
           } />
-          <Route path="/d01" element={<D01 employees={employees} />} />
-          <Route path="/d02" element={<D02 employees={employees} />} />
+          <Route path="/d01" element={<D01 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
+          <Route path="/d02" element={<D02 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
+          <Route path="/d03" element={<D03 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
+          <Route path="/d04" element={<D04 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
+          <Route path="/d05" element={<D05 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
         </Routes>
       </div>
     </BrowserRouter>

@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { OrgChartTree } from '../../components/OrgChartTree';
 import { Sidebar } from '../../components/Sidebar';
 import { OnboardingForm } from '../../components/OnboardingForm';
@@ -12,6 +12,7 @@ interface HomeProps {
     onDelete: (id: string) => void;
     onAddEmployee: (newEmployee: Employee) => void;
     onMoveNode: (draggedId: string, targetId: string, position: 'inside' | 'before' | 'after') => void;
+    focusedEmployeeId?: string | null;
 }
 
 export const Home: React.FC<HomeProps> = ({
@@ -20,7 +21,8 @@ export const Home: React.FC<HomeProps> = ({
     onUpdate,
     onDelete,
     onAddEmployee,
-    onMoveNode
+    onMoveNode,
+    focusedEmployeeId
 }) => {
     const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
     const [zoom, setZoom] = useState(1);
@@ -34,6 +36,16 @@ export const Home: React.FC<HomeProps> = ({
     const [isOnboarding, setIsOnboarding] = useState(false);
     const [initialParentId, setInitialParentId] = useState<string | null>(null);
 
+    const handleSelect = useCallback((id: string) => {
+        setSelectedEmployeeId(id);
+    }, []);
+
+    useEffect(() => {
+        if (focusedEmployeeId) {
+            handleSelect(focusedEmployeeId);
+        }
+    }, [focusedEmployeeId, handleSelect]);
+
     const foundEmployees = useMemo(() => {
         if (!searchQuery) return [];
         return employees
@@ -41,10 +53,6 @@ export const Home: React.FC<HomeProps> = ({
                 e.title.toLowerCase().includes(searchQuery.toLowerCase()))
             .map(e => e.id);
     }, [employees, searchQuery]);
-
-    const handleSelect = useCallback((id: string) => {
-        setSelectedEmployeeId(id);
-    }, []);
 
     const handleAddChild = useCallback((parentId: string) => {
         setInitialParentId(parentId);
@@ -161,7 +169,7 @@ export const Home: React.FC<HomeProps> = ({
                 </div>
 
                 {/* Floating Toolbar */}
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40">
+                <div className="absolute top-8 right-8 z-40">
                     <div className="flex items-center gap-1 p-2 bg-white/90 dark:bg-[#1e293b]/90 backdrop-blur-md rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 dark:border-gray-700">
 
                         <button

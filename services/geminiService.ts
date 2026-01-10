@@ -7,8 +7,13 @@ export class GeminiService {
    * Creates a fresh GoogleGenAI instance right before the API call as per guidelines.
    */
   static async researchRole(title: string, department: string) {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    
+    const apiKey = import.meta.env.VITE_API_KEY;
+    if (!apiKey) {
+      console.error("Missing API Key. Please add VITE_API_KEY to your .env file.");
+      return "AI research unavailable: Missing API Key.";
+    }
+    const ai = new GoogleGenAI({ apiKey });
+
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',

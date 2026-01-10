@@ -1,17 +1,25 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Employee } from '../../types';
+import { useSettings } from '../context/SettingsContext';
 
 interface D02Props {
     employees: Employee[];
+    focusedEmployeeId?: string | null;
 }
 
-export const D02: React.FC<D02Props> = ({ employees }) => {
-    // Use a subset if potentially too many, but "employee database" usually implies all.
-    // 360 degrees / count. If count is high, radius needs to be huge.
-    // Let's cap at 30 for the visual effect or calculate radius.
-    // Fixed radius of 800px works for ~20 cards.
-    const cards = employees.length > 0 ? employees : Array.from({ length: 10 }).map((_, i) => ({
+export const D02: React.FC<D02Props> = ({ employees, focusedEmployeeId }) => {
+    const { settings } = useSettings();
+    const [manualResume, setManualResume] = useState(false);
+
+    // Reset manual resume when search changes
+    useEffect(() => {
+        if (focusedEmployeeId) {
+            setManualResume(false);
+        }
+    }, [focusedEmployeeId]);
+
+    const cards = employees.length > 0 ? employees : Array.from({ length: 15 }).map((_, i) => ({
         id: i.toString(),
         name: 'John Doe',
         title: 'Employee',
@@ -23,35 +31,55 @@ export const D02: React.FC<D02Props> = ({ employees }) => {
         email: ''
     } as unknown as Employee));
 
-    const displayCards = cards.slice(0, 20);
+    let displayList = cards;
+    if (focusedEmployeeId) {
+        const target = employees.find(e => e.id === focusedEmployeeId);
+        if (target) {
+            const others = cards.filter(e => e.id !== focusedEmployeeId);
+            displayList = [target, ...others];
+        }
+    }
+
+    const displayCards = displayList.slice(0, 20);
     const count = displayCards.length;
-    const radius = Math.max(800, count * 40); // Dynamic radius avoid overlap
+    const radius = Math.max(800, count * 40);
+
+    const isPaused = focusedEmployeeId && !manualResume;
 
     return (
         <div className="min-h-[calc(100vh-64px)] bg-[#FF5F1F] overflow-hidden relative font-sans perspective-container flex items-center justify-center">
             {/* Background Text */}
             <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none select-none">
                 <h1 className="text-[18vw] font-black text-white/20 whitespace-nowrap leading-none tracking-tighter mix-blend-overlay">
-                    ORGCHART PRO
+                    {settings.companyName.toUpperCase()}
                 </h1>
             </div>
 
-            {/* Carousel */}
-            <div className="w-full h-[600px] relative z-10 perspective-[2000px] flex items-center justify-center">
+            {/* Carousel Container */}
+            <div className="w-full h-[600px] relative z-10 perspective-[2000px] flex items-center justify-center pointer-events-none">
                 <div
-                    className="relative w-full h-full transform-style-3d animate-spin-slow"
+                    className={`relative w-full h-full transform-style-3d pointer-events-auto ${isPaused ? '' : 'animate-spin-slow'}`}
                     style={{
-                        transformOrigin: 'center center'
+                        transformOrigin: 'center center',
+                        transform: isPaused ? 'rotateY(0deg)' : undefined,
+                        cursor: isPaused ? 'pointer' : 'grab'
                     }}
+                    onClick={() => setManualResume(true)}
                 >
                     {displayCards.map((emp, i) => {
                         const angle = (i / count) * 360;
                         return (
                             <div
                                 key={emp.id}
-                                className="absolute top-1/2 left-1/2 w-[280px] h-[400px] bg-[#111] text-white p-6 flex flex-col justify-between shadow-2xl rounded-sm backface-hidden transition-transform duration-500 group hover:scale-105"
+                                className="absolute top-1/2 left-1/2 w-[280px] h-[400px] bg-[#111] text-white p-6 flex flex-col justify-between shadow-2xl rounded-sm backface-hidden transition-transform duration-500 group cursor-pointer hover:scale-105 hover:z-50"
                                 style={{
-                                    transform: `translate(-50%, -50%) rotateY(${angle}deg) translateZ(${radius}px)`
+                                    transform: `translate(-50%, -50%) rotateY(${angle}deg) translateZ(${radius}px)`,
+                                    // Ensure clicks are captured immediately
+                                    pointerEvents: 'auto'
+                                }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setManualResume(true);
                                 }}
                             >
                                 <div>
@@ -83,7 +111,7 @@ export const D02: React.FC<D02Props> = ({ employees }) => {
           to { transform: rotateY(-360deg); }
         }
         .animate-spin-slow {
-          animation: spin-slow 60s linear infinite;
+          animation: spin-slow 120s linear infinite;
         }
         .animate-spin-slow:hover {
             animation-play-state: paused;

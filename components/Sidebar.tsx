@@ -15,17 +15,28 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ employee, employees, onClose, onUpdate, onDelete, isEditMode }) => {
   const [formData, setFormData] = useState<Employee | null>(null);
   const [isResearching, setIsResearching] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setFormData(employee);
   }, [employee]);
 
-  if (!formData) return null;
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => prev ? { ...prev, imageUrl: reader.result as string } : null);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSmartDescription = async () => {
+    if (!formData) return;
     setIsResearching(true);
     const result = await GeminiService.researchRole(formData.title, formData.department);
-    setFormData({ ...formData, description: result });
+    setFormData(prev => prev ? { ...prev, description: result } : null);
     setIsResearching(false);
   };
 
@@ -33,10 +44,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ employee, employees, onClose, 
     if (formData) onUpdate(formData);
   };
 
+  if (!formData) return null;
+
   return (
-    <aside className={`fixed top-[60px] right-0 bottom-0 w-96 flex flex-col bg-white dark:bg-[#1e293b] border-l border-gray-200 dark:border-gray-800 shadow-2xl z-40 transition-transform duration-300 ${employee ? 'translate-x-0' : 'translate-x-full'}`}>
-      <div className="flex items-center justify-between px-6 pt-6 pb-2">
-        <h2 className="text-[#111418] dark:text-white text-xl font-bold leading-tight">
+    <aside className={`fixed top-[60px] right-0 bottom-0 w-[450px] flex flex-col bg-white dark:bg-[#1e293b] border-l border-gray-200 dark:border-gray-800 shadow-2xl z-40 transition-transform duration-300 ${employee ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className="flex items-center justify-between px-5 pt-5 pb-3">
+        <h2 className="text-[#111418] dark:text-white text-lg font-bold leading-tight">
           {isEditMode ? 'Edit Employee' : 'Employee Details'}
         </h2>
         <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors">
@@ -44,46 +57,58 @@ export const Sidebar: React.FC<SidebarProps> = ({ employee, employees, onClose, 
         </button>
       </div>
 
-      <div className="p-6 flex flex-col gap-6 overflow-y-auto flex-1">
-        <div className="flex flex-col gap-3 items-center">
+      <div className="px-5 pb-5 flex flex-col gap-4 overflow-y-auto flex-1">
+        <div className="flex flex-col gap-2 items-center">
           <div className="relative group">
             <div
-              className="w-24 h-24 rounded-full bg-cover bg-center border-4 border-gray-50 dark:border-gray-700 shadow-md"
+              className="w-20 h-20 rounded-full bg-cover bg-center border-4 border-gray-50 dark:border-gray-700 shadow-md"
               style={{ backgroundImage: `url(${formData.imageUrl})` }}
             ></div>
             {isEditMode && (
-              <button className="absolute bottom-0 right-0 bg-primary text-white p-1.5 rounded-full shadow-lg hover:bg-blue-600 transition-colors">
-                <span className="material-symbols-outlined text-sm">edit</span>
-              </button>
+              <>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute bottom-0 right-0 bg-primary text-white p-1 rounded-full shadow-lg hover:bg-blue-600 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-sm">edit</span>
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+              </>
             )}
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Profile ID: {formData.id}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">ID: {formData.id}</p>
         </div>
 
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Full Name</label>
             <input
               disabled={!isEditMode}
-              className="w-full h-10 rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white px-3 focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full h-9 rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white px-3 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Job Title</label>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Job Title</label>
             <input
               disabled={!isEditMode}
-              className="w-full h-10 rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white px-3 focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full h-9 rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white px-3 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Department</label>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Department</label>
             <select
               disabled={!isEditMode}
-              className="w-full h-10 rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white px-3 appearance-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full h-9 rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white px-3 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed"
               value={formData.department}
               onChange={(e) => setFormData({ ...formData, department: e.target.value as Department })}
             >
@@ -91,11 +116,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ employee, employees, onClose, 
               {Object.values(Department).map(dept => <option key={dept} value={dept}>{dept}</option>)}
             </select>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Reports To</label>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Reports To</label>
             <select
               disabled={!isEditMode}
-              className="w-full h-10 rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white px-3 appearance-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full h-9 rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white px-3 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed"
               value={formData.parentId || ''}
               onChange={(e) => setFormData({ ...formData, parentId: e.target.value || null })}
             >
@@ -110,9 +135,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ employee, employees, onClose, 
                 ))}
             </select>
           </div>
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1">
             <div className="flex justify-between items-center">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+              <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Description</label>
               {isEditMode && (
                 <button
                   onClick={handleSmartDescription}
@@ -126,7 +151,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ employee, employees, onClose, 
             </div>
             <textarea
               disabled={!isEditMode}
-              className="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white p-3 h-24 resize-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none text-sm disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white p-3 h-20 resize-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none text-xs disabled:opacity-70 disabled:cursor-not-allowed"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
@@ -134,19 +159,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ employee, employees, onClose, 
         </div>
 
         {isEditMode && (
-          <div className="mt-auto pt-6 border-t border-gray-100 dark:border-gray-700 flex flex-col gap-3">
+          <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-700 flex flex-col gap-2">
             <button
               onClick={handleSave}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary h-10 px-4 text-white text-sm font-bold shadow hover:bg-blue-600 transition-colors"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary h-9 px-4 text-white text-sm font-bold shadow hover:bg-blue-600 transition-colors"
             >
-              <span className="material-symbols-outlined text-lg">save</span>
+              <span className="material-symbols-outlined text-base">save</span>
               Save Changes
             </button>
             <button
               onClick={() => onDelete(formData.id)}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-900 h-10 px-4 text-red-600 dark:text-red-400 text-sm font-bold hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-900 h-9 px-4 text-red-600 dark:text-red-400 text-sm font-bold hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
             >
-              <span className="material-symbols-outlined text-lg">delete</span>
+              <span className="material-symbols-outlined text-base">delete</span>
               Delete Employee
             </button>
           </div>
