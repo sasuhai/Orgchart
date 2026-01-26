@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Home } from './src/pages/Home';
 import { D01 } from './src/pages/D01';
@@ -209,7 +209,7 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
+    <HashRouter>
 
       <div className="flex flex-col h-screen overflow-hidden">
         <Header
@@ -242,7 +242,7 @@ const App: React.FC = () => {
           <Route path="/d06" element={<D06 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
         </Routes>
       </div>
-    </BrowserRouter>
+    </HashRouter>
   );
 };
 

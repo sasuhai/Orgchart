@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { Employee } from '../../types';
 import { useSettings } from '../context/SettingsContext';
 
@@ -13,7 +13,7 @@ const ITEMS_PER_PAGE = 6;
 export const D06: React.FC<D06Props> = ({ employees }) => {
     const { settings } = useSettings();
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [randomSeed, setRandomSeed] = useState(0); // Used to ensure randomness on every click
+    const [isHovered, setIsHovered] = useState(false);
 
     // Mock data if empty
     const fullList = useMemo(() => {
@@ -28,38 +28,35 @@ export const D06: React.FC<D06Props> = ({ employees }) => {
 
     const totalPages = Math.ceil(fullList.length / ITEMS_PER_PAGE);
 
-    // Get current 6 items
-    const currentItems = useMemo(() => {
-        const start = currentIndex * ITEMS_PER_PAGE;
-        return fullList.slice(start, start + ITEMS_PER_PAGE);
-    }, [fullList, currentIndex]);
-
-    // Generate random active indices for labels whenever page changes or 'randomSeed' updates
-    const activeIndices = useMemo(() => {
-        const count = currentItems.length;
-        if (count === 0) return [];
-
-        // Pick two distinct random indices
-        const idx1 = Math.floor(Math.random() * count);
-        let idx2 = Math.floor(Math.random() * count);
-
-        // Ensure they are different (simple retry)
-        while (count > 1 && idx2 === idx1) {
-            idx2 = Math.floor(Math.random() * count);
-        }
-
-        return [idx1, idx2];
-    }, [currentItems.length, currentIndex, randomSeed]);
-
-    const handleNext = () => {
+    const handleNext = useCallback(() => {
         setCurrentIndex((prev) => (prev + 1) % totalPages);
-        setRandomSeed((prev) => prev + 1); // Force new random positions
-    };
+    }, [totalPages]);
 
-    const handlePrev = () => {
+    const handlePrev = useCallback(() => {
         setCurrentIndex((prev) => (prev - 1 + totalPages) % totalPages);
-        setRandomSeed((prev) => prev + 1); // Force new random positions
-    };
+    }, [totalPages]);
+
+    // Auto-scroll logic
+    useEffect(() => {
+        if (isHovered) return;
+        const timer = setInterval(() => {
+            handleNext();
+        }, 8000);
+        return () => clearInterval(timer);
+    }, [handleNext, isHovered]);
+
+    // Deterministic random indices for labels to prevent jumping
+    const pageActiveIndices = useMemo(() => {
+        return Array.from({ length: totalPages }).map((_, pIdx) => {
+            const start = pIdx * ITEMS_PER_PAGE;
+            const count = Math.min(ITEMS_PER_PAGE, fullList.length - start);
+            if (count === 0) return [];
+            const firstIdx = (pIdx * 3) % count;
+            let secondIdx = (pIdx * 7 + 1) % count;
+            if (firstIdx === secondIdx && count > 1) secondIdx = (secondIdx + 1) % count;
+            return [firstIdx, secondIdx];
+        });
+    }, [fullList.length, totalPages]);
 
     const layouts = [
         { rotate: -3, y: 10 },
@@ -70,152 +67,145 @@ export const D06: React.FC<D06Props> = ({ employees }) => {
         { rotate: 3, y: -2 },
     ];
 
-    const cloudColors = [
-        'bg-blue-500 text-white',
-        'bg-orange-500 text-white',
-        'bg-purple-500 text-white',
-        'bg-green-500 text-white',
-        'bg-pink-500 text-white',
-        'bg-indigo-500 text-white',
-    ];
-
     return (
-        <div className="min-h-[calc(100vh-64px)] bg-[#F8F9FA] flex flex-col items-center py-10 overflow-hidden font-sans">
+        <div className="min-h-[calc(100vh-64px)] bg-[#F8F9FA] flex flex-col items-center py-10 overflow-hidden font-sans text-slate-900 selection:bg-blue-100">
 
-            {/* Giant Background Text (Matched to D04) */}
+            {/* Giant Background Text */}
             <div className="absolute top-[10%] left-0 right-0 w-full text-center pointer-events-none select-none z-0">
                 <h2 className="text-[18vw] font-bold tracking-tighter text-neutral-200/50 leading-none">
                     {settings.companyName}
                 </h2>
             </div>
-            {/* Spacer to push content down below the giant text if needed, or just rely on flex center */}
+
             <div className="h-20 md:h-32 w-full"></div>
 
             {/* Carousel Section */}
-            <div className="flex-1 w-full flex items-center justify-center relative px-4">
+            <div
+                className="flex-1 w-full flex items-center justify-center relative px-4 z-10"
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+            >
 
-                {/* Left Arrow */}
+                {/* Navigation Buttons */}
                 <button
                     onClick={handlePrev}
-                    className="absolute left-4 md:left-12 z-30 p-4 rounded-full bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:scale-110 active:scale-95 transition-all text-slate-700 hover:text-blue-600 ring-1 ring-slate-100"
+                    className="absolute left-6 md:left-16 z-50 p-5 rounded-full bg-white/60 backdrop-blur-md shadow-[0_8px_40px_rgba(0,0,0,0.1)] hover:bg-white hover:scale-110 active:scale-95 transition-all text-slate-800 hover:text-blue-600 ring-1 ring-white/50"
                 >
                     <span className="material-symbols-outlined text-3xl">arrow_back</span>
                 </button>
 
-                {/* Cards Row - Locked Width */}
-                {/* We specificly use a container that allows the items to stay strict size */}
-                <div className="flex items-center justify-center gap-6 px-12 h-[450px]">
-                    {currentItems.map((emp, i) => {
-                        const layout = layouts[i % layouts.length];
-
-                        const isFirstLabel = i === activeIndices[0];
-                        const isSecondLabel = i === activeIndices[1];
-                        const hasCloud = isFirstLabel || isSecondLabel;
-
-                        // Force one blue and one orange
-                        let bubbleColor = '#93c5fd'; // Default Blue
-                        if (isSecondLabel) bubbleColor = '#fdba74'; // Second is Orange
-
+                {/* Cinematic Cross-Dissolve Stage */}
+                <div className="relative w-full max-w-[1300px] h-[480px]">
+                    {Array.from({ length: totalPages }).map((_, pageIdx) => {
+                        const isActive = currentIndex === pageIdx;
                         return (
                             <div
-                                key={emp.id}
-                                className="relative flex-none group perspective-1000 select-none cursor-pointer transition-all duration-500 ease-out hover:z-50"
+                                key={pageIdx}
+                                className="absolute inset-0 flex items-center justify-center gap-10 px-12 transition-opacity"
                                 style={{
-                                    scrollSnapAlign: 'start',
-                                    transform: `translateY(${layout.y}px) rotate(${layout.rotate}deg)`,
-                                    width: '180px',
-                                    height: '244px',
-                                    zIndex: 10 + i
+                                    opacity: isActive ? 1 : 0,
+                                    zIndex: isActive ? 30 : 25, // Both stay high to ensure overlap
+                                    pointerEvents: isActive ? 'auto' : 'none',
+                                    transitionDuration: '3000ms',
+                                    transitionTimingFunction: 'ease-in-out'
                                 }}
                             >
-                                <div
-                                    className="w-full h-full shadow-[0_20px_40px_-12px_rgba(0,0,0,0.3)] transition-transform duration-500 group-hover:scale-105 transform-gpu relative bg-white"
-                                    style={{ borderRadius: '30px', overflow: 'hidden' }}
-                                >
-                                    <img
-                                        src={emp.imageUrl}
-                                        alt={emp.name}
-                                        className="w-full h-full object-cover rounded-[30px]"
-                                        style={{ WebkitMaskImage: '-webkit-radial-gradient(white, black)' }}
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).style.backgroundColor = '#ccc';
-                                        }}
-                                    />
-                                    {/* Inner border for definition */}
-                                    <div className="absolute inset-0 rounded-[30px] border border-black/5 pointer-events-none"></div>
+                                {fullList.slice(pageIdx * ITEMS_PER_PAGE, (pageIdx + 1) * ITEMS_PER_PAGE).map((emp, i) => {
+                                    const layout = layouts[i % layouts.length];
+                                    const activeIndices = pageActiveIndices[pageIdx];
+                                    const isFirstLabel = i === activeIndices[0];
+                                    const isSecondLabel = i === activeIndices[1];
+                                    const hasCloud = isFirstLabel || isSecondLabel;
+                                    const bubbleColor = isSecondLabel ? '#fdba74' : '#93c5fd';
 
-                                    {/* Hover Overlay */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5 rounded-[30px]">
-                                        <p className="text-white font-bold text-lg leading-tight">{emp.name}</p>
-                                        <p className="text-white text-xs mt-1 font-normal">{emp.department}</p>
-                                    </div>
-                                </div>
-
-                                {/* Role Cloud - Speech Bubble Style */}
-                                {hasCloud && (
-                                    <div
-                                        className="absolute left-1/2 -translate-x-1/2 z-[50] whitespace-nowrap pointer-events-none"
-                                        style={{ top: '-60px' }} // Moved higher up away from card
-                                    >
+                                    return (
                                         <div
-                                            className="px-5 py-2 rounded-full shadow-lg font-normal tracking-wide flex items-center justify-center relative"
+                                            key={emp.id}
+                                            className="relative flex-none group perspective-1000 select-none cursor-pointer"
                                             style={{
-                                                transform: `rotate(${-layout.rotate}deg)`,
-                                                backgroundColor: bubbleColor,
-                                                color: '#000000',
-                                                fontSize: '15px'
+                                                transform: `translateY(${layout.y}px) rotate(${layout.rotate}deg)`,
+                                                width: '180px',
+                                                height: '244px',
+                                                zIndex: 10 + i
                                             }}
                                         >
-                                            {emp.title || 'Creative'}
-
-                                            {/* Speech Bubble Tail (The 'tild') */}
                                             <div
-                                                className="absolute top-full left-1/2 -translate-x-1/2"
-                                                style={{
-                                                    width: '0',
-                                                    height: '0',
-                                                    borderLeft: '8px solid transparent',
-                                                    borderRight: '8px solid transparent',
-                                                    borderTop: `10px solid ${bubbleColor}`
-                                                }}
-                                            ></div>
+                                                className="w-full h-full shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] transition-all duration-700 group-hover:scale-110 group-hover:-translate-y-2 transform-gpu relative bg-white"
+                                                style={{ borderRadius: '34px', overflow: 'hidden' }}
+                                            >
+                                                <img
+                                                    src={emp.imageUrl}
+                                                    alt={emp.name}
+                                                    className="w-full h-full object-cover rounded-[34px]"
+                                                    loading="eager"
+                                                />
+                                                <div className="absolute inset-0 rounded-[34px] border border-black/5 pointer-events-none"></div>
+
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-5 rounded-[34px]">
+                                                    <p className="text-white font-bold text-lg leading-tight tracking-tight">{emp.name}</p>
+                                                    <p className="text-white/70 text-[10px] uppercase font-bold mt-1 tracking-widest">{emp.department}</p>
+                                                </div>
+                                            </div>
+
+                                            {hasCloud && (
+                                                <div
+                                                    className="absolute left-1/2 -translate-x-1/2 z-[50] whitespace-nowrap pointer-events-none transition-all duration-1000"
+                                                    style={{ top: '-70px' }}
+                                                >
+                                                    <div
+                                                        className="px-6 py-2.5 rounded-full shadow-2xl font-bold tracking-wide flex items-center justify-center relative border border-white/30 backdrop-blur-sm"
+                                                        style={{
+                                                            transform: `rotate(${-layout.rotate}deg)`,
+                                                            backgroundColor: bubbleColor,
+                                                            color: '#000000',
+                                                            fontSize: '14px'
+                                                        }}
+                                                    >
+                                                        {emp.title || 'Creative'}
+                                                        <div
+                                                            className="absolute top-full left-1/2 -translate-x-1/2"
+                                                            style={{
+                                                                width: '0',
+                                                                height: '0',
+                                                                borderLeft: '10px solid transparent',
+                                                                borderRight: '10px solid transparent',
+                                                                borderTop: `12px solid ${bubbleColor}`
+                                                            }}
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                )}
+                                    );
+                                })}
                             </div>
                         );
                     })}
                 </div>
 
-                {/* Right Arrow */}
                 <button
                     onClick={handleNext}
-                    className="absolute right-4 md:right-12 z-30 p-4 rounded-full bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:scale-110 active:scale-95 transition-all text-slate-700 hover:text-blue-600 ring-1 ring-slate-100"
+                    className="absolute right-6 md:right-16 z-50 p-5 rounded-full bg-white/60 backdrop-blur-md shadow-[0_8px_40px_rgba(0,0,0,0.1)] hover:bg-white hover:scale-110 active:scale-95 transition-all text-slate-800 hover:text-blue-600 ring-1 ring-white/50"
                 >
                     <span className="material-symbols-outlined text-3xl">arrow_forward</span>
                 </button>
 
             </div>
 
-            {/* Pagination */}
-            <div className="mt-8 flex gap-2">
+            {/* Premium Pagination */}
+            <div className="mt-14 flex gap-3">
                 {Array.from({ length: totalPages }).map((_, i) => (
-                    <div
+                    <button
                         key={i}
-                        className={`h-1.5 rounded-full transition-all duration-300 ${i === currentIndex ? 'w-8 bg-slate-900' : 'w-2 bg-slate-300'}`}
+                        onClick={() => setCurrentIndex(i)}
+                        className={`h-2 rounded-full transition-all duration-700 ${i === currentIndex ? 'w-10 bg-slate-900 shadow-sm' : 'w-2 bg-slate-200 hover:bg-slate-300'}`}
                     />
                 ))}
             </div>
 
             <style>{`
-                @keyframes bounce-slow {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-6px); }
-                }
-                .animate-bounce-slow {
-                    animation: bounce-slow 4s infinite ease-in-out;
-                }
-             `}</style>
+                .perspective-1000 { perspective: 1000px; }
+            `}</style>
         </div>
     );
 };
