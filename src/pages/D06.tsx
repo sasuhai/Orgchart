@@ -10,6 +10,10 @@ interface D06Props {
 
 const ITEMS_PER_PAGE = 6;
 
+const gcd = (a: number, b: number): number => {
+    return b === 0 ? a : gcd(b, a % b);
+};
+
 export const D06: React.FC<D06Props> = ({ employees }) => {
     const { settings } = useSettings();
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -17,46 +21,55 @@ export const D06: React.FC<D06Props> = ({ employees }) => {
 
     // Mock data if empty
     const fullList = useMemo(() => {
-        return employees.length > 0 ? employees : Array.from({ length: 18 }).map((_, i) => ({
+        return employees.length > 0 ? employees : Array.from({ length: 13 }).map((_, i) => ({
             id: `mock-${i}`,
-            name: `Employee ${i}`,
+            name: `Employee ${i + 1}`,
             title: i % 2 === 0 ? 'Designer' : 'Developer',
             department: i % 3 === 0 ? 'Creative' : 'Engineering',
             imageUrl: `https://picsum.photos/300/400?random=${i}`,
         } as unknown as Employee));
     }, [employees]);
 
-    const totalPages = Math.ceil(fullList.length / ITEMS_PER_PAGE);
+    // Calculate total unique pages based on fullList length and ITEMS_PER_PAGE
+    // This allows the cycle to eventually repeat exactly at the first card.
+    const totalPages = useMemo(() => {
+        if (fullList.length === 0) return 0;
+        const n = fullList.length;
+        const k = ITEMS_PER_PAGE;
+        // The start index of page p is (p * k) % n.
+        // It repeats when (p * k) is a multiple of n, i.e., p = LCM(k, n) / k = n / GCD(k, n).
+        return n / gcd(k, n);
+    }, [fullList.length]);
 
     const handleNext = useCallback(() => {
+        if (totalPages === 0) return;
         setCurrentIndex((prev) => (prev + 1) % totalPages);
     }, [totalPages]);
 
     const handlePrev = useCallback(() => {
+        if (totalPages === 0) return;
         setCurrentIndex((prev) => (prev - 1 + totalPages) % totalPages);
     }, [totalPages]);
 
     // Auto-scroll logic
     useEffect(() => {
-        if (isHovered) return;
+        if (isHovered || totalPages <= 1) return;
         const timer = setInterval(() => {
             handleNext();
         }, 8000);
         return () => clearInterval(timer);
-    }, [handleNext, isHovered]);
+    }, [handleNext, isHovered, totalPages]);
 
     // Deterministic random indices for labels to prevent jumping
     const pageActiveIndices = useMemo(() => {
         return Array.from({ length: totalPages }).map((_, pIdx) => {
-            const start = pIdx * ITEMS_PER_PAGE;
-            const count = Math.min(ITEMS_PER_PAGE, fullList.length - start);
-            if (count === 0) return [];
+            const count = ITEMS_PER_PAGE;
             const firstIdx = (pIdx * 3) % count;
             let secondIdx = (pIdx * 7 + 1) % count;
             if (firstIdx === secondIdx && count > 1) secondIdx = (secondIdx + 1) % count;
             return [firstIdx, secondIdx];
         });
-    }, [fullList.length, totalPages]);
+    }, [totalPages]);
 
     const layouts = [
         { rotate: -3, y: 10 },
@@ -110,74 +123,81 @@ export const D06: React.FC<D06Props> = ({ employees }) => {
                                     transitionTimingFunction: 'ease-in-out'
                                 }}
                             >
-                                {fullList.slice(pageIdx * ITEMS_PER_PAGE, (pageIdx + 1) * ITEMS_PER_PAGE).map((emp, i) => {
-                                    const layout = layouts[i % layouts.length];
-                                    const activeIndices = pageActiveIndices[pageIdx];
-                                    const isFirstLabel = i === activeIndices[0];
-                                    const isSecondLabel = i === activeIndices[1];
-                                    const hasCloud = isFirstLabel || isSecondLabel;
-                                    const bubbleColor = isSecondLabel ? '#fdba74' : '#93c5fd';
+                                {(() => {
+                                    const pageItems = Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => {
+                                        const index = (pageIdx * ITEMS_PER_PAGE + i) % fullList.length;
+                                        return fullList[index];
+                                    });
 
-                                    return (
-                                        <div
-                                            key={emp.id}
-                                            className="relative flex-none group perspective-1000 select-none cursor-pointer"
-                                            style={{
-                                                transform: `translateY(${layout.y}px) rotate(${layout.rotate}deg)`,
-                                                width: '180px',
-                                                height: '244px',
-                                                zIndex: 10 + i
-                                            }}
-                                        >
+                                    return pageItems.map((emp, i) => {
+                                        const layout = layouts[i % layouts.length];
+                                        const activeIndices = pageActiveIndices[pageIdx];
+                                        const isFirstLabel = i === activeIndices[0];
+                                        const isSecondLabel = i === activeIndices[1];
+                                        const hasCloud = isFirstLabel || isSecondLabel;
+                                        const bubbleColor = isSecondLabel ? '#fdba74' : '#93c5fd';
+
+                                        return (
                                             <div
-                                                className="w-full h-full shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] transition-all duration-700 group-hover:scale-110 group-hover:-translate-y-2 transform-gpu relative bg-white"
-                                                style={{ borderRadius: '34px', overflow: 'hidden' }}
+                                                key={emp.id}
+                                                className="relative flex-none group perspective-1000 select-none cursor-pointer"
+                                                style={{
+                                                    transform: `translateY(${layout.y}px) rotate(${layout.rotate}deg)`,
+                                                    width: '180px',
+                                                    height: '244px',
+                                                    zIndex: 10 + i
+                                                }}
                                             >
-                                                <img
-                                                    src={emp.imageUrl}
-                                                    alt={emp.name}
-                                                    className="w-full h-full object-cover rounded-[34px]"
-                                                    loading="eager"
-                                                />
-                                                <div className="absolute inset-0 rounded-[34px] border border-black/5 pointer-events-none"></div>
-
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-5 rounded-[34px]">
-                                                    <p className="text-white font-bold text-lg leading-tight tracking-tight">{emp.name}</p>
-                                                    <p className="text-white/70 text-[10px] uppercase font-bold mt-1 tracking-widest">{emp.department}</p>
-                                                </div>
-                                            </div>
-
-                                            {hasCloud && (
                                                 <div
-                                                    className="absolute left-1/2 -translate-x-1/2 z-[50] whitespace-nowrap pointer-events-none transition-all duration-1000"
-                                                    style={{ top: '-70px' }}
+                                                    className="w-full h-full shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] transition-all duration-700 group-hover:scale-110 group-hover:-translate-y-2 transform-gpu relative bg-white"
+                                                    style={{ borderRadius: '34px', overflow: 'hidden' }}
                                                 >
-                                                    <div
-                                                        className="px-6 py-2.5 rounded-full shadow-2xl font-bold tracking-wide flex items-center justify-center relative border border-white/30 backdrop-blur-sm"
-                                                        style={{
-                                                            transform: `rotate(${-layout.rotate}deg)`,
-                                                            backgroundColor: bubbleColor,
-                                                            color: '#000000',
-                                                            fontSize: '14px'
-                                                        }}
-                                                    >
-                                                        {emp.title || 'Creative'}
-                                                        <div
-                                                            className="absolute top-full left-1/2 -translate-x-1/2"
-                                                            style={{
-                                                                width: '0',
-                                                                height: '0',
-                                                                borderLeft: '10px solid transparent',
-                                                                borderRight: '10px solid transparent',
-                                                                borderTop: `12px solid ${bubbleColor}`
-                                                            }}
-                                                        ></div>
+                                                    <img
+                                                        src={emp.imageUrl}
+                                                        alt={emp.name}
+                                                        className="w-full h-full object-cover rounded-[34px]"
+                                                        loading="eager"
+                                                    />
+                                                    <div className="absolute inset-0 rounded-[34px] border border-black/5 pointer-events-none"></div>
+
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-5 rounded-[34px]">
+                                                        <p className="text-white font-bold text-lg leading-tight tracking-tight">{emp.name}</p>
+                                                        <p className="text-white/70 text-[10px] uppercase font-bold mt-1 tracking-widest">{emp.department}</p>
                                                     </div>
                                                 </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
+
+                                                {hasCloud && (
+                                                    <div
+                                                        className="absolute left-1/2 -translate-x-1/2 z-[50] whitespace-nowrap pointer-events-none transition-all duration-1000"
+                                                        style={{ top: '-70px' }}
+                                                    >
+                                                        <div
+                                                            className="px-6 py-2.5 rounded-full shadow-2xl font-bold tracking-wide flex items-center justify-center relative border border-white/30 backdrop-blur-sm"
+                                                            style={{
+                                                                transform: `rotate(${-layout.rotate}deg)`,
+                                                                backgroundColor: bubbleColor,
+                                                                color: '#000000',
+                                                                fontSize: '14px'
+                                                            }}
+                                                        >
+                                                            {emp.title || 'Creative'}
+                                                            <div
+                                                                className="absolute top-full left-1/2 -translate-x-1/2"
+                                                                style={{
+                                                                    width: '0',
+                                                                    height: '0',
+                                                                    borderLeft: '10px solid transparent',
+                                                                    borderRight: '10px solid transparent',
+                                                                    borderTop: `12px solid ${bubbleColor}`
+                                                                }}
+                                                            ></div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    });
+                                })()}
                             </div>
                         );
                     })}
@@ -193,7 +213,7 @@ export const D06: React.FC<D06Props> = ({ employees }) => {
             </div>
 
             {/* Premium Pagination */}
-            <div className="mt-14 flex gap-3">
+            <div className="mt-14 flex flex-wrap justify-center gap-3 px-10 max-w-full">
                 {Array.from({ length: totalPages }).map((_, i) => (
                     <button
                         key={i}
