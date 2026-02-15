@@ -122,7 +122,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Navigation - Segmented Pill */}
           <nav className="hidden lg:flex items-center bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
-            {['/', '/d01', '/d02', '/d03', '/d04', '/d05', '/d06'].map((path) => (
+            {['/', '/d01', '/d02', '/d03', '/d04', '/d05', '/d06', '/d07'].map((path) => (
               <Link
                 key={path}
                 to={path}

@@ -8,6 +8,7 @@ import { D03 } from './src/pages/D03';
 import { D04 } from './src/pages/D04';
 import { D05 } from './src/pages/D05';
 import { D06 } from './src/pages/D06';
+import { D07 } from './src/pages/D07';
 import { INITIAL_EMPLOYEES } from './constants';
 import { Employee } from './types';
 import { useSettings } from './src/context/SettingsContext';
@@ -221,26 +222,31 @@ const App: React.FC = () => {
           employees={employees}
           onSelectEmployee={handleSearchSelect}
         />
-
-        <Routes>
-          <Route path="/" element={
-            <Home
-              employees={employees}
-              searchQuery={searchQuery}
-              onUpdate={handleUpdate}
-              onDelete={handleDelete}
-              onAddEmployee={handleAddEmployee}
-              onMoveNode={handleMoveNode}
-              focusedEmployeeId={focusedEmployeeId}
-            />
-          } />
-          <Route path="/d01" element={<D01 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
-          <Route path="/d02" element={<D02 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
-          <Route path="/d03" element={<D03 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
-          <Route path="/d04" element={<D04 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
-          <Route path="/d05" element={<D05 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
-          <Route path="/d06" element={<D06 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
-        </Routes>
+        <div
+          className="flex-1 relative overflow-auto"
+          data-scroll-container
+        >
+          <Routes>
+            <Route path="/" element={
+              <Home
+                employees={employees}
+                searchQuery={searchQuery}
+                onUpdate={handleUpdate}
+                onDelete={handleDelete}
+                onAddEmployee={handleAddEmployee}
+                onMoveNode={handleMoveNode}
+                focusedEmployeeId={focusedEmployeeId}
+              />
+            } />
+            <Route path="/d01" element={<D01 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
+            <Route path="/d02" element={<D02 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
+            <Route path="/d03" element={<D03 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
+            <Route path="/d04" element={<D04 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
+            <Route path="/d05" element={<D05 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
+            <Route path="/d06" element={<D06 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
+            <Route path="/d07" element={<D07 employees={employees} focusedEmployeeId={focusedEmployeeId} />} />
+          </Routes>
+        </div>
       </div>
     </HashRouter>
   );
